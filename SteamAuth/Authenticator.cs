@@ -89,6 +89,62 @@ namespace SteamAuth
         }
 
         /// <summary>
+        ///     Generates and returns a new steam guard code using the passed shared secret.
+        /// </summary>
+        /// <param name="sharedSecret">The shared secret to generate steam guard code from.</param>
+        /// <returns>
+        ///     The newly generated steam guard code.
+        /// </returns>
+        public static async Task<string> GenerateSteamGuardCode(string sharedSecret)
+        {
+            return GenerateSteamGuardCodeForTime(sharedSecret, await SteamTime.GetTime().ConfigureAwait(false));
+        }
+
+        /// <summary>
+        ///     Generates and returns a new steam guard code based on the time windows passed as an argument using the passed
+        ///     shared secret
+        /// </summary>
+        /// <param name="sharedSecret">The shared secret to generate steam guard code from.</param>
+        /// <param name="time">The time window to generate the code for.</param>
+        /// <returns>The newly generated steam guard code.</returns>
+        public static string GenerateSteamGuardCodeForTime(string sharedSecret, DateTime time)
+        {
+            if (string.IsNullOrEmpty(sharedSecret))
+            {
+                return "";
+            }
+
+            var sharedSecretUnEscaped = Regex.Unescape(sharedSecret);
+            var sharedSecretArray = Convert.FromBase64String(sharedSecretUnEscaped);
+
+            var window = time.ToUnixTime() / SteamGuardCodeGenerationStep;
+            var timeArray = BitConverter.GetBytes(window);
+
+            if (BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(timeArray);
+            }
+
+            var hashedData = new HMACSHA1 {Key = sharedSecretArray}.ComputeHash(timeArray);
+
+            var offset = hashedData[hashedData.Length - 1] & 0x0F;
+            var token = ((hashedData[offset] & 0x7f) << 24) |
+                        ((hashedData[offset + 1] & 0xff) << 16) |
+                        ((hashedData[offset + 2] & 0xff) << 8) |
+                        ((hashedData[offset + 3] & 0xff) % 1000000);
+
+            var charArray = new char[SteamGuardCodeLength];
+
+            for (var i = 0; i < charArray.Length; ++i)
+            {
+                charArray[i] = SteamGuardCodeTranslations[token % SteamGuardCodeTranslations.Length];
+                token /= SteamGuardCodeTranslations.Length;
+            }
+
+            return new string(charArray);
+        }
+
+        /// <summary>
         ///     Accepts one or more confirmations
         /// </summary>
         /// <param name="confirmations">The [array of confirmations/confirmation] to accept.</param>
@@ -193,39 +249,7 @@ namespace SteamAuth
         /// <returns>The newly generated steam guard code.</returns>
         public string GenerateSteamGuardCodeForTime(DateTime time)
         {
-            if (string.IsNullOrEmpty(AuthenticatorData.SharedSecret))
-            {
-                return "";
-            }
-
-            var sharedSecretUnEscaped = Regex.Unescape(AuthenticatorData.SharedSecret);
-            var sharedSecretArray = Convert.FromBase64String(sharedSecretUnEscaped);
-
-            var window = time.ToUnixTime() / SteamGuardCodeGenerationStep;
-            var timeArray = BitConverter.GetBytes(window);
-
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Reverse(timeArray);
-            }
-
-            var hashedData = new HMACSHA1 {Key = sharedSecretArray}.ComputeHash(timeArray);
-
-            var offset = hashedData[hashedData.Length - 1] & 0x0F;
-            var token = ((hashedData[offset] & 0x7f) << 24) |
-                        ((hashedData[offset + 1] & 0xff) << 16) |
-                        ((hashedData[offset + 2] & 0xff) << 8) |
-                        ((hashedData[offset + 3] & 0xff) % 1000000);
-
-            var charArray = new char[SteamGuardCodeLength];
-
-            for (var i = 0; i < charArray.Length; ++i)
-            {
-                charArray[i] = SteamGuardCodeTranslations[token % SteamGuardCodeTranslations.Length];
-                token /= SteamGuardCodeTranslations.Length;
-            }
-
-            return new string(charArray);
+            return GenerateSteamGuardCodeForTime(AuthenticatorData.SharedSecret, time);
         }
 
         /// <summary>
