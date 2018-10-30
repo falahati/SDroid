@@ -32,11 +32,11 @@ namespace SteamAuth
             string revocationCode,
             string secret1,
             string serialNumber,
-            long serverTime,
+            long? serverTime,
             string sharedSecret,
-            AuthenticatorLinkerErrorCode status,
+            AuthenticatorLinkerErrorCode? status,
             string steamGuardScheme,
-            ulong steamId,
+            ulong? steamId,
             string tokenGID,
             string uri)
         {
@@ -47,8 +47,8 @@ namespace SteamAuth
             SerialNumber = serialNumber;
             ServerTime = serverTime;
             SharedSecret = sharedSecret;
-            Status = status;
-            SteamGuardScheme = steamGuardScheme;
+            Status = status ?? AuthenticatorLinkerErrorCode.Success;
+            SteamGuardScheme = steamGuardScheme ?? "2";
             SteamId = steamId;
             TokenGID = tokenGID;
             Uri = uri;
@@ -70,19 +70,19 @@ namespace SteamAuth
         public string SerialNumber { get; }
 
         [JsonProperty("server_time")]
-        public long ServerTime { get; }
+        public long? ServerTime { get; }
 
         [JsonProperty("shared_secret")]
         public string SharedSecret { get; }
 
         [JsonProperty("status")]
-        public AuthenticatorLinkerErrorCode Status { get; }
+        public AuthenticatorLinkerErrorCode? Status { get; }
 
         [JsonProperty("steamguard_scheme")]
         public string SteamGuardScheme { get; }
 
         [JsonProperty("steamid")]
-        public ulong SteamId { get; }
+        public ulong? SteamId { get; }
 
         [JsonProperty("token_gid")]
         public string TokenGID { get; }
@@ -168,6 +168,23 @@ namespace SteamAuth
 
                 return hashCode;
             }
+        }
+
+        /// <summary>
+        ///     Determines whether this instance holds enough information to be considered as a valid representation of a
+        ///     registered authenticator.
+        /// </summary>
+        /// <returns>
+        ///     <c>true</c> if this instance holds enough information; otherwise, <c>false</c>.
+        /// </returns>
+        public bool HasEnoughInfo()
+        {
+            return !string.IsNullOrWhiteSpace(AccountName) &&
+                   !string.IsNullOrWhiteSpace(IdentitySecret) &&
+                   !string.IsNullOrWhiteSpace(RevocationCode) &&
+                   !string.IsNullOrWhiteSpace(SharedSecret) &&
+                   !string.IsNullOrWhiteSpace(SteamGuardScheme) &&
+                   Status == AuthenticatorLinkerErrorCode.Success;
         }
     }
 }

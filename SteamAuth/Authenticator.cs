@@ -74,7 +74,56 @@ namespace SteamAuth
         /// <returns>An instance of Authenticator class</returns>
         public static Authenticator DeSerialize(string serialized)
         {
-            return JsonConvert.DeserializeObject<Authenticator>(serialized);
+            var authenticator = JsonConvert.DeserializeObject<Authenticator>(serialized);
+
+            // Tries to fill authenticator data by searching for properties in the root of Json object
+            if (authenticator.AuthenticatorData == null || !authenticator.AuthenticatorData.HasEnoughInfo())
+            {
+                var authenticatorData = JsonConvert.DeserializeObject<AuthenticatorData>(serialized);
+                authenticator = new Authenticator(
+                    authenticatorData,
+                    authenticator.Session,
+                    authenticator.DeviceId
+                );
+            }
+
+            // Tries to fill session data by searching for properties in the root of Json object
+            if (authenticator.Session == null || !authenticator.Session.HasEnoughInfo())
+            {
+                var sessionData = JsonConvert.DeserializeObject<SessionData>(serialized);
+                authenticator = new Authenticator(
+                    authenticator.AuthenticatorData,
+                    sessionData,
+                    authenticator.DeviceId
+                );
+            }
+
+            // Tries to fill device identification string by searching for properties in the root of Json object
+            if (string.IsNullOrWhiteSpace(authenticator.DeviceId))
+            {
+                var deviceIdProperties = JsonConvert.DeserializeAnonymousType(
+                    serialized,
+                    new
+                    {
+                        deviceId = (string) null,
+                        device_id = (string) null,
+                        device = (string) null
+                    }
+                );
+                authenticator = new Authenticator(
+                    authenticator.AuthenticatorData,
+                    authenticator.Session,
+                    deviceIdProperties.device_id ?? deviceIdProperties.deviceId ?? deviceIdProperties.device
+                );
+            }
+
+            // Do we have a enough information to call this a valid instance?
+            if (!authenticator.HasEnoughInfo())
+            {
+                return null;
+            }
+
+            return authenticator;
         }
 
         /// <summary>
@@ -85,7 +134,7 @@ namespace SteamAuth
         /// <returns>An instance of Authenticator class</returns>
         public static Authenticator DeSerializeFromFile(string fileName)
         {
-            return JsonConvert.DeserializeObject<Authenticator>(File.ReadAllText(fileName));
+            return DeSerialize(File.ReadAllText(fileName));
         }
 
         /// <summary>
@@ -274,6 +323,20 @@ namespace SteamAuth
             }
 
             return null;
+        }
+
+        /// <summary>
+        ///     Determines whether this instance holds enough information to be considered as a valid representation of a
+        ///     registered authenticator device or software.
+        /// </summary>
+        /// <returns>
+        ///     <c>true</c> if this instance holds enough information; otherwise, <c>false</c>.
+        /// </returns>
+        public bool HasEnoughInfo()
+        {
+            return !string.IsNullOrWhiteSpace(DeviceId) &&
+                   Session.HasEnoughInfo() &&
+                   AuthenticatorData.HasEnoughInfo();
         }
 
         /// <summary>

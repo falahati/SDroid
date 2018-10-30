@@ -27,7 +27,7 @@ namespace SteamAuth
         // ReSharper disable once TooManyDependencies
         public SessionData(
             string oAuthToken,
-            ulong steamId,
+            ulong? steamId,
             string steamLogin,
             string steamLoginSecure,
             string webCookie,
@@ -64,7 +64,7 @@ namespace SteamAuth
         /// <summary>
         ///     Gets the steam user identifier number.
         /// </summary>
-        public ulong SteamId { get; }
+        public ulong? SteamId { get; }
 
         /// <summary>
         ///     Gets the steam user login.
@@ -152,6 +152,23 @@ namespace SteamAuth
             cookies.Add(new Cookie("sessionid", SessionId, "/", Constants.Constants.CommunityCookieDomain));
 
             return cookies;
+        }
+
+        /// <summary>
+        ///     Determines whether this instance holds enough information to be considered as a valid representation of a
+        ///     logged in session.
+        /// </summary>
+        /// <returns>
+        ///     <c>true</c> if this instance holds enough information; otherwise, <c>false</c>.
+        /// </returns>
+        public bool HasEnoughInfo()
+        {
+            return !string.IsNullOrWhiteSpace(OAuthToken) &&
+                   !string.IsNullOrWhiteSpace(SessionId) &&
+                   !string.IsNullOrWhiteSpace(SteamLogin) &&
+                   !string.IsNullOrWhiteSpace(SteamLoginSecure) &&
+                   !string.IsNullOrWhiteSpace(WebCookie) &&
+                   SteamId > 0;
         }
 
         /// <summary>
