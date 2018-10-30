@@ -23,10 +23,10 @@ namespace SteamAuth.Models
         public string Message { get; set; }
 
         [JsonIgnore]
-        public OAuth OAuthToken
+        public OAuthModel OAuthToken
         {
             get => !string.IsNullOrWhiteSpace(OAuthTokenString)
-                ? JsonConvert.DeserializeObject<OAuth>(OAuthTokenString)
+                ? JsonConvert.DeserializeObject<OAuthModel>(OAuthTokenString)
                 : null;
         }
 

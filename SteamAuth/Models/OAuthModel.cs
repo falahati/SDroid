@@ -2,7 +2,7 @@
 
 namespace SteamAuth.Models
 {
-    internal class OAuth
+    internal class OAuthModel
     {
         [JsonProperty("account_name")]
         public string AccountName { get; set; }

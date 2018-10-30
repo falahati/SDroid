@@ -2,7 +2,7 @@
 
 namespace SteamAuth.Models
 {
-    internal class RefreshSessionDataInternalResponse
+    internal class RefreshSessionDataResponse
     {
         [JsonProperty("token")]
         public string Token { get; set; }

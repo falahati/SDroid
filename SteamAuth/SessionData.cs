@@ -41,7 +41,7 @@ namespace SteamAuth
             SessionId = sessionId;
         }
 
-        internal SessionData(OAuth oAuth, string sessionId)
+        internal SessionData(OAuthModel oAuth, string sessionId)
         {
             OAuthToken = oAuth.OAuthToken;
             SteamId = oAuth.SteamId;
@@ -180,7 +180,7 @@ namespace SteamAuth
             try
             {
                 var refreshResponse = await SteamWeb
-                    .DownloadJson<ResponseWrapper<RefreshSessionDataInternalResponse>>(
+                    .DownloadJson<ResponseWrapper<RefreshSessionDataResponse>>(
                         Constants.Constants.MobileAuthenticatorGetTokenUrl,
                         SteamWebRequestMethod.Post,
                         new QueryStringBuilder

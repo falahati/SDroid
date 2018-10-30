@@ -375,7 +375,7 @@ namespace SteamAuth
         /// <exception cref="RevokeAuthenticatorException">Failed to revoke the authenticator.</exception>
         public async Task RevokeAuthenticator()
         {
-            var serverResponse = await SteamWeb.DownloadJson<ResponseWrapper<RemoveAuthenticatorInternalResponse>>(
+            var serverResponse = await SteamWeb.DownloadJson<ResponseWrapper<RemoveAuthenticatorResponse>>(
                 Constants.Constants.TwoFactorRemoveAuthenticatorUrl,
                 SteamWebRequestMethod.Post,
                 new QueryStringBuilder

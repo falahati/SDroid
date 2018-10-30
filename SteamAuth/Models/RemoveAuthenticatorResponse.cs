@@ -2,7 +2,7 @@
 
 namespace SteamAuth.Models
 {
-    internal class RemoveAuthenticatorInternalResponse
+    internal class RemoveAuthenticatorResponse
     {
         [JsonProperty("revocation_attempts_remaining")]
         public uint RevocationAttemptsRemaining { get; set; }

@@ -9,7 +9,7 @@ namespace SteamAuth.Exceptions
     /// <seealso cref="System.Exception" />
     public class RevokeAuthenticatorException : Exception
     {
-        internal RevokeAuthenticatorException(RemoveAuthenticatorInternalResponse response) : base(
+        internal RevokeAuthenticatorException(RemoveAuthenticatorResponse response) : base(
             "Failed to revoke the authenticator.")
         {
             AttemptsRemaining = response?.RevocationAttemptsRemaining;
