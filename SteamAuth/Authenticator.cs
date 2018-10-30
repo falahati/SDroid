@@ -150,6 +150,18 @@ namespace SteamAuth
         }
 
         /// <summary>
+        ///     Generates and returns a new steam guard code using the passed shared secret.
+        /// </summary>
+        /// <param name="sharedSecret">The shared secret to generate steam guard code from.</param>
+        /// <returns>
+        ///     The newly generated steam guard code.
+        /// </returns>
+        public static async Task<string> GenerateSteamGuardCode(byte[] sharedSecret)
+        {
+            return GenerateSteamGuardCodeForTime(sharedSecret, await SteamTime.GetTime().ConfigureAwait(false));
+        }
+
+        /// <summary>
         ///     Generates and returns a new steam guard code based on the time windows passed as an argument using the passed
         ///     shared secret
         /// </summary>
@@ -166,6 +178,23 @@ namespace SteamAuth
             var sharedSecretUnEscaped = Regex.Unescape(sharedSecret);
             var sharedSecretArray = Convert.FromBase64String(sharedSecretUnEscaped);
 
+            return GenerateSteamGuardCodeForTime(sharedSecretArray, time);
+        }
+
+        /// <summary>
+        ///     Generates and returns a new steam guard code based on the time windows passed as an argument using the passed
+        ///     shared secret
+        /// </summary>
+        /// <param name="sharedSecret">The shared secret to generate steam guard code from.</param>
+        /// <param name="time">The time window to generate the code for.</param>
+        /// <returns>The newly generated steam guard code.</returns>
+        public static string GenerateSteamGuardCodeForTime(byte[] sharedSecret, DateTime time)
+        {
+            if (!(sharedSecret?.Length > 0))
+            {
+                throw new ArgumentException("Shared secret byte array is null or empty.");
+            }
+
             var window = time.ToUnixTime() / SteamGuardCodeGenerationStep;
             var timeArray = BitConverter.GetBytes(window);
 
@@ -174,7 +203,7 @@ namespace SteamAuth
                 Array.Reverse(timeArray);
             }
 
-            var hashedData = new HMACSHA1 {Key = sharedSecretArray}.ComputeHash(timeArray);
+            var hashedData = new HMACSHA1 {Key = sharedSecret}.ComputeHash(timeArray);
 
             var offset = hashedData[hashedData.Length - 1] & 0x0F;
             var token = ((hashedData[offset] & 0x7f) << 24) |
