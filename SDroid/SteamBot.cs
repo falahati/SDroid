@@ -75,6 +75,7 @@ namespace SDroid
         {
             CancellationTokenSource?.Cancel(true);
             SessionCheckTimer?.Dispose();
+            AuthenticatorConfirmationTimer?.Dispose();
 
             while (true)
             {
