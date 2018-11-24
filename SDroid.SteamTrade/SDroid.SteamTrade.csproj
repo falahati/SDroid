@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>1.0.0.1</Version>
+    <Company>Soroush Falahati (falahati.net)</Company>
+    <Description>A C# library that provides Steam trading and inventory retrieval functionalities</Description>
+    <Authors>Soroush Falahati</Authors>
+    <Copyright>Copyright © Soroush Falahati 2018</Copyright>
+    <Platforms>AnyCPU</Platforms>
+    <Product>SDroid</Product>
+    <PackageProjectUrl>https://github.com/falahati/SDroid</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/falahati/SDroid/blob/master/LICENSE</PackageLicenseUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <IncludeSource>true</IncludeSource>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Title>SDroid's Steam Trading</Title>
+    <PackageId>SDroid.SteamTrade</PackageId>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <BumpLabel>dev</BumpLabel>
+    <BumpLabelDigits>4</BumpLabelDigits>
+    <OutputPath>..\Debug</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <BumpRevision>True</BumpRevision>
+    <BumpResetLabel>dev</BumpResetLabel>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <OutputPath>..\Release</OutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference PrivateAssets="all" Include="MSBump" Version="2.3.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="SteamKit2" Version="2.1.0" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SDroid.SteamWeb\SDroid.SteamWeb.csproj" />
+  </ItemGroup>
+</Project>
