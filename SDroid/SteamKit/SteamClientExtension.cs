@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -11,12 +13,10 @@ namespace SDroid.SteamKit
     {
         public static async Task<WebSession> AuthenticateWebSession(
             this SteamClient client,
-            SteamWebAPI steamWebAPI,
             string userNonce)
         {
             // Generate random SessionId
-            var uniqueId = client.SteamID.ToString(); // Guid.NewGuid().ToString("N");
-            var sessionId = Convert.ToBase64String(Encoding.UTF8.GetBytes(uniqueId));
+            var sessionId = Guid.NewGuid().ToString("N");
 
             // Generate an AES SessionKey.
             var sessionKey = CryptoHelper.GenerateRandomBlock(32);
@@ -35,53 +35,28 @@ namespace SDroid.SteamKit
             // AES encrypt the loginkey with our session key.
             var cryptedLoginKey = CryptoHelper.SymmetricEncrypt(loginKey, sessionKey);
 
-
             try
             {
-                var result = await steamWebAPI.RequestDynamic(
-                    "ISteamUserAuth",
-                    SteamWebAccessRequestMethod.Post,
-                    "AuthenticateUser",
-                    "v0001",
-                    new
-                    {
-                        steamid = client.SteamID.ConvertToUInt64().ToString(),
-                        sessionkey = HttpUtility.UrlEncode(cryptedSessionKey),
-                        encrypted_loginkey = HttpUtility.UrlEncode(cryptedLoginKey)
-                    }
-                ).ConfigureAwait(false);
+                using (var steamUserAuth = WebAPI.GetAsyncInterface("ISteamUserAuth"))
+                {
+                    var result = await steamUserAuth.CallAsync(HttpMethod.Post, "AuthenticateUser", 1,
+                        new Dictionary<string, string>
+                        {
+                            {"steamid", client.SteamID.ConvertToUInt64().ToString()},
+                            {"sessionkey", HttpUtility.UrlEncode(cryptedSessionKey)},
+                            {"encrypted_loginkey", HttpUtility.UrlEncode(cryptedLoginKey)}
+                        }).ConfigureAwait(false);
 
-                return new WebSession(result["token"].ToString(), result["tokensecure"].ToString(), sessionId);
-
-                //using (var steamUserAuth = WebAPI.GetAsyncInterface("ISteamUserAuth", apiKey))
-                //{
-                //    //using (dynamic userAuth = WebAPI.GetAsyncInterface("", ""))
-                //    //{
-                //    //    var authResult = await userAuth.AuthenticateUser();
-                //    //    authResult = userAuth.AuthenticateUser(
-                //    //        steamid: client.SteamID.ConvertToUInt64(),
-                //    //        sessionkey: HttpUtility.UrlEncode(cryptedSessionKey),
-                //    //        encrypted_loginkey: HttpUtility.UrlEncode(cryptedLoginKey),
-                //    //        method: "POST",
-                //    //        secure: true
-                //    //    );
-                //    //}
-
-                //    var result = await steamUserAuth.CallAsync(HttpMethod.Post, "AuthenticateUser", 1,
-                //        new Dictionary<string, string>
-                //        {
-                //            {"steamid", client.SteamID.ConvertToUInt64().ToString()},
-                //            {"sessionkey", HttpUtility.UrlEncode(cryptedSessionKey)},
-                //            {"encrypted_loginkey", HttpUtility.UrlEncode(cryptedLoginKey)}
-                //        }).ConfigureAwait(false);
-
-                //    return new WebSession(result["token"].ToString(), result["tokensecure"].ToString(), sessionId);
-                //}
+                    return new WebSession(
+                        client.SteamID.ConvertToUInt64(), 
+                        result["token"]?.Value?.ToUpper(), 
+                        result["tokensecure"]?.Value?.ToUpper(),
+                        sessionId, null, null);
+                }
             }
-            catch (Exception e)
+            catch
             {
                 return null;
-                // TODO: THROW?
             }
         }
     }

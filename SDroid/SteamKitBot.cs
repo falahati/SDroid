@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Security.Cryptography;
 using System.Threading;
@@ -7,90 +8,120 @@ using SDroid.Helpers;
 using SDroid.Interfaces;
 using SDroid.SteamKit;
 using SDroid.SteamMobile;
+using SDroid.SteamWeb;
 using SteamKit2;
 
 namespace SDroid
 {
-    public abstract class SteamKitBot : SteamBot
+    // ReSharper disable once ClassTooBig
+    public abstract class SteamKitBot : SteamBot, ISteamKitBot
     {
         protected ExponentialBackoff ConnectionBackoff = new ExponentialBackoff();
         protected ExponentialBackoff LoginBackoff = new ExponentialBackoff();
-
-        protected Timer LoginCheckTimer;
+        protected SteamUser.LogOnDetails LoginDetails;
+        protected Timer StalledLoginCheckTimer;
+        protected List<IDisposable> SubscribedCallbacks = new List<IDisposable>();
 
         protected SteamKitBot(ISteamKitBotSettings settings, IBotLogger botLogger) : base(settings, botLogger)
         {
             CancellationTokenSource = new CancellationTokenSource();
 
             SteamClient = new SteamClient();
-            SteamNotifications = new SteamNotifications();
-            SteamClient.AddHandler(SteamNotifications);
+            CallbackManager = new CallbackManager(SteamClient);
             SteamUser = SteamClient.GetHandler<SteamUser>();
             SteamFriends = SteamClient.GetHandler<SteamFriends>();
 
-            CallbackManager = new CallbackManager(SteamClient);
+            SubscribedCallbacks.Add(
+                CallbackManager.Subscribe<SteamClient.ConnectedCallback>(OnInternalSteamClientConnected));
+            SubscribedCallbacks.Add(
+                CallbackManager.Subscribe<SteamClient.DisconnectedCallback>(OnInternalSteamClientDisconnect));
 
-            CallbackManager.Subscribe<SteamClient.ConnectedCallback>(OnInternalSteamClientConnected);
-            CallbackManager.Subscribe<SteamClient.DisconnectedCallback>(OnInternalSteamClientDisconnect);
-
-            CallbackManager.Subscribe<SteamUser.LoggedOnCallback>(OnInternalSteamUserLoggedOn);
-            CallbackManager.Subscribe<SteamUser.LoggedOffCallback>(OnInternalSteamUserLoggedOff);
-            //CallbackManager.Subscribe<SteamUser.LoginKeyCallback>(OnInternalSteamUserLoginKeyExchange);
-            CallbackManager.Subscribe<SteamUser.WebAPIUserNonceCallback>(OnInternalSteamUserNewWebApiUserNonce);
-            CallbackManager.Subscribe<SteamUser.UpdateMachineAuthCallback>(
-                OnInternalSteamUserUpdateMachineAuthenticationCallback);
+            SubscribedCallbacks.Add(CallbackManager.Subscribe<SteamUser.LoggedOnCallback>(OnInternalSteamUserLoggedOn));
+            SubscribedCallbacks.Add(
+                CallbackManager.Subscribe<SteamUser.LoggedOffCallback>(OnInternalSteamUserLoggedOff));
+            SubscribedCallbacks.Add(
+                CallbackManager.Subscribe<SteamUser.LoginKeyCallback>(OnInternalSteamUserLoginKeyExchange));
+            SubscribedCallbacks.Add(
+                CallbackManager.Subscribe<SteamUser.WebAPIUserNonceCallback>(OnInternalSteamUserNewWebApiUserNonce));
+            SubscribedCallbacks.Add(CallbackManager.Subscribe<SteamUser.UpdateMachineAuthCallback>(
+                OnInternalSteamUserUpdateMachineAuthenticationCallback));
+            SubscribedCallbacks.Add(
+                CallbackManager.Subscribe<SteamUser.AccountInfoCallback>(OnInternalAccountInfoAvailable));
+            SubscribedCallbacks.Add(
+                CallbackManager.Subscribe<SteamUser.WalletInfoCallback>(OnInternalWalletInfoAvailable));
 
             // ReSharper disable once SuspiciousTypeConversion.Global
             if (this is ISteamKitChatBot)
             {
-                CallbackManager.Subscribe<SteamFriends.FriendMsgCallback>(OnInternalFriendSteamFriendsMessageReceived);
-            }
-
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            if (this is ISteamKitNotificationBot)
-            {
-                CallbackManager.Subscribe<ClientCommentNotificationsCallback>(OnInternalCommentNotifications);
-                CallbackManager.Subscribe<ClientUserNotificationsCallback>(OnInternalUserNotifications);
+                SubscribedCallbacks.Add(
+                    CallbackManager.Subscribe<SteamFriends.FriendMsgCallback>(
+                        OnInternalFriendSteamFriendsMessageReceived));
             }
         }
 
-        protected new ISteamKitBotSettings BotSettings
+        public override void Dispose()
+        {
+            base.Dispose();
+
+            StalledLoginCheckTimer?.Dispose();
+
+            foreach (var callback in SubscribedCallbacks)
+            {
+                callback?.Dispose();
+            }
+
+            SubscribedCallbacks.Clear();
+
+            SubscribedCallbacks = null;
+            SteamClient = null;
+            SteamUser = null;
+            SteamFriends = null;
+            CallbackManager = null;
+        }
+
+        public override SteamID SteamId
+        {
+            get => SteamClient.SteamID ?? base.SteamId;
+        }
+
+        public new ISteamKitBotSettings BotSettings
         {
             get => base.BotSettings as ISteamKitBotSettings;
         }
 
-        protected CallbackManager CallbackManager { get; set; }
-        protected SteamClient SteamClient { get; set; }
-        protected SteamFriends SteamFriends { get; set; }
-        protected SteamNotifications SteamNotifications { get; set; }
-        protected SteamUser SteamUser { get; set; }
+        public CallbackManager CallbackManager { get; protected set; }
+        public SteamClient SteamClient { get; protected set; }
+        public SteamFriends SteamFriends { get; protected set; }
+        public SteamUser SteamUser { get; protected set; }
 
-        public override Task StartBot()
+        public override async Task StartBot()
         {
             lock (this)
             {
                 if (BotStatus != SteamBotStatus.Ready)
                 {
-                    return Task.CompletedTask;
+                    return;
                 }
 
                 BotStatus = SteamBotStatus.Running;
             }
+
+            await BotLogger.Debug(nameof(StartBot), "Starting bot.").ConfigureAwait(false);
 
             CancellationTokenSource = new CancellationTokenSource();
 
             var _ = Task.Factory.StartNew(SteamKitPolling, CancellationTokenSource.Token,
                 TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously);
 
-            SteamClient.Connect();
 
-            return Task.CompletedTask;
+            await BotLogger.Debug(nameof(StartBot), "Connecting to steam network.").ConfigureAwait(false);
+            SteamClient.Connect();
         }
 
         /// <inheritdoc />
         public override Task StopBot()
         {
-            SteamClient.Disconnect();
+            SteamClient?.Disconnect();
 
             return base.StopBot();
         }
@@ -125,9 +156,12 @@ namespace SDroid
                     }
                 }
 
+                await BotLogger.Debug(nameof(OnCheckSession), "Checking session.").ConfigureAwait(false);
+
                 if (!await WebAccess.VerifySession().ConfigureAwait(false))
                 {
-                    await BotLogger.Warning("OnCheckSession", "Session expired. Requesting new WebAPI user nonce.")
+                    await BotLogger
+                        .Warning(nameof(OnCheckSession), "Session expired. Requesting new WebAPI user nonce.")
                         .ConfigureAwait(false);
 
                     await SteamUser.RequestWebAPIUserNonce().ToTask().ConfigureAwait(false);
@@ -135,10 +169,15 @@ namespace SDroid
             }
             catch (Exception e)
             {
-                await BotLogger.Error("OnCheckSession", e.Message).ConfigureAwait(false);
+                await BotLogger.Error(nameof(OnCheckSession), e.Message).ConfigureAwait(false);
                 await OnLoggedOut().ConfigureAwait(false);
                 await OnTerminate().ConfigureAwait(false);
             }
+        }
+
+        protected virtual Task OnAccountInfoAvailable(SteamUser.AccountInfoCallback accountInfo)
+        {
+            return Task.CompletedTask;
         }
 
         protected virtual Task OnConnected()
@@ -151,48 +190,70 @@ namespace SDroid
             return Task.CompletedTask;
         }
 
-        private void InternalInitializeLogin(SteamUser.LogOnDetails loginDetails = null)
+        protected virtual void OnStalledLoginCheck()
+        {
+            lock (this)
+            {
+                if (BotStatus != SteamBotStatus.LoggingIn)
+                {
+                    return;
+                }
+            }
+
+            BotLogger.Warning(nameof(OnStalledLoginCheck), "Login stalled, trying again.");
+            InternalInitializeLogin();
+        }
+
+        protected virtual Task OnWalletInfoAvailable(SteamUser.WalletInfoCallback walletInfo)
+        {
+            return Task.CompletedTask;
+        }
+
+        private void InternalInitializeLogin()
         {
             LoginBackoff.Delay().Wait();
             OnLoggingIn().Wait();
 
-            var timerLoginDetails = loginDetails;
-            LoginCheckTimer = new Timer(state =>
+            lock (this)
             {
-                lock (this)
-                {
-                    if (BotStatus != SteamBotStatus.LoggingIn)
-                    {
-                        return;
-                    }
-                }
+                StalledLoginCheckTimer?.Dispose();
+                StalledLoginCheckTimer = new Timer(state => OnStalledLoginCheck(), null,
+                    TimeSpan.FromSeconds(BotSettings.LoginTimeout), TimeSpan.FromMilliseconds(-1));
+            }
 
-                BotLogger.Warning("LoginCheckTimer", "Login stalled, trying again.");
-                InternalInitializeLogin(timerLoginDetails);
-            }, null, TimeSpan.FromSeconds(BotSettings.LoginTimeout), TimeSpan.FromMilliseconds(-1));
-
-            loginDetails = loginDetails ??
+            BotLogger.Debug(nameof(InternalInitializeLogin), "Logging in.");
+            LoginDetails = LoginDetails ??
                            new SteamUser.LogOnDetails
                            {
                                Username = BotSettings.Username,
-                               Password = BotSettings.Password,
-                               SentryFileHash = BotSettings.MachineHash?.Length > 0 ? BotSettings.MachineHash : null
+                               SentryFileHash =
+                                   BotSettings.SentryFileHash?.Length > 0 ? BotSettings.SentryFileHash : null,
+                               ShouldRememberPassword = true,
+                               LoginKey = BotSettings.LoginKey
                            };
-            SteamUser.LogOn(loginDetails);
+
+            if (string.IsNullOrWhiteSpace(LoginDetails.Password) && string.IsNullOrWhiteSpace(LoginDetails.LoginKey))
+            {
+                BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Requesting account password.");
+                var password = OnPasswordRequired().Result;
+
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    BotLogger.Error(nameof(OnInternalSteamUserLoggedOn), "Bad password provided.");
+                    OnTerminate().Wait();
+
+                    return;
+                }
+
+                LoginDetails.Password = password;
+            }
+
+            SteamUser.LogOn(LoginDetails);
         }
 
-        private void OnInternalCommentNotifications(
-            ClientCommentNotificationsCallback clientCommentNotificationsCallback)
+        private void OnInternalAccountInfoAvailable(SteamUser.AccountInfoCallback accountInfoCallback)
         {
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            if (this is ISteamKitNotificationBot notificationBot)
-            {
-                notificationBot.OnClientNotifications(
-                        (int) clientCommentNotificationsCallback.Comments,
-                        (int) clientCommentNotificationsCallback.ProfileComments,
-                        (int) clientCommentNotificationsCallback.Subscriptions)
-                    .Wait();
-            }
+            OnAccountInfoAvailable(accountInfoCallback).Wait();
         }
 
         private void OnInternalFriendSteamFriendsMessageReceived(SteamFriends.FriendMsgCallback friendMsgCallback)
@@ -200,6 +261,9 @@ namespace SDroid
             // ReSharper disable once SuspiciousTypeConversion.Global
             if (this is ISteamKitChatBot chatBot)
             {
+                BotLogger.Debug(nameof(OnInternalFriendSteamFriendsMessageReceived),
+                    "Received a new chat event: " + friendMsgCallback.EntryType);
+
                 switch (friendMsgCallback.EntryType)
                 {
                     case EChatEntryType.ChatMsg:
@@ -254,12 +318,15 @@ namespace SDroid
 
         private void OnInternalSteamClientConnected(SteamClient.ConnectedCallback connectedCallback)
         {
+            BotLogger.Debug(nameof(OnInternalSteamClientConnected), "Connected to the steam network.");
             ConnectionBackoff.Reset();
             OnConnected().Wait();
         }
 
         private void OnInternalSteamClientDisconnect(SteamClient.DisconnectedCallback disconnectedCallback)
         {
+            BotLogger.Debug(nameof(OnInternalSteamClientDisconnect), "Disconnected from the steam network.");
+
             if (!disconnectedCallback.UserInitiated)
             {
                 lock (this)
@@ -274,6 +341,8 @@ namespace SDroid
 
                 OnDisconnected().Wait();
                 ConnectionBackoff.Delay().Wait();
+
+                BotLogger.Debug(nameof(OnInternalSteamClientDisconnect), "Reconnecting to the steam network.");
                 SteamClient.Connect();
             }
             else
@@ -284,7 +353,7 @@ namespace SDroid
 
         private void OnInternalSteamUserLoggedOff(SteamUser.LoggedOffCallback loggedOffCallback)
         {
-            BotLogger.Debug("OnInternalSteamUserLoggedOff", "SteamUser.LoggedOffCallback.Result = `{0}`",
+            BotLogger.Debug(nameof(OnInternalSteamUserLoggedOff), "SteamUser.LoggedOffCallback.Result = `{0}`",
                 loggedOffCallback.Result);
 
             lock (this)
@@ -337,104 +406,169 @@ namespace SDroid
                 }
             }
 
+            BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn),
+                "SteamUser.LoggedOnCallback.Result = `{0}`, SteamUser.LoggedOnCallback.ExtendedResult = `{1}`",
+                loggedOnCallback.Result, loggedOnCallback.ExtendedResult);
+
             if (loggedOnCallback.Result == EResult.OK)
             {
-                var session = SteamClient.AuthenticateWebSession(WebAPI, loggedOnCallback.WebAPIUserNonce).Result;
+                BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Retriving WebAPI and WebAccess session.");
+                var session = SteamClient.AuthenticateWebSession(loggedOnCallback.WebAPIUserNonce).Result;
 
-                if (session != null)
+                if (session != null && session.HasEnoughInfo())
                 {
-                    LoginBackoff.Reset();
-                    OnNewWebSessionAvailable(session).Wait();
+                    if (new SteamWebAccess(
+                            session,
+                            IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress)
+                                ? ipAddress
+                                : IPAddress.Any,
+                            string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy))
+                        .VerifySession().Result)
+                    {
+                        BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Session is valid.");
+                        OnNewWebSessionAvailable(session).Wait();
+                        LoginBackoff.Reset();
+                    }
+                    else
+                    {
+                        BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Bad session retrieved.");
+                        SteamUser.RequestWebAPIUserNonce();
+                    }
                 }
-
-                InternalInitializeLogin();
+                else
+                {
+                    BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Failed to retrieve WebAccess session.");
+                    InternalInitializeLogin();
+                }
 
                 return;
             }
 
-            BotLogger.Debug("OnInternalSteamUserLoggedOn", "SteamUser.LoggedOnCallback.Result = `{0}`",
-                loggedOnCallback.Result);
 
-            var loginDetails = new SteamUser.LogOnDetails
-            {
-                Username = BotSettings.Username,
-                Password = BotSettings.Password,
-                SentryFileHash = BotSettings.MachineHash?.Length > 0 ? BotSettings.MachineHash : null
-            };
+            LoginDetails.LoginKey = null;
+            LoginDetails.SentryFileHash = null;
+
+            BotSettings.LoginKey = null;
+            BotSettings.SentryFile = null;
+            BotSettings.SentryFileHash = null;
+            BotSettings.SentryFileName = null;
+            BotSettings.SaveSettings();
 
             if (loggedOnCallback.Result == EResult.AccountLoginDeniedNeedTwoFactor)
             {
+                BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Requesting authenticator code.");
                 var mobileAuthCode = OnAuthenticatorCodeRequired().Result;
 
                 if (string.IsNullOrEmpty(mobileAuthCode))
                 {
-                    BotLogger.Error("OnInternalSteamUserLoggedOn", "Bad Steam Guard mobile code.");
+                    BotLogger.Error(nameof(OnInternalSteamUserLoggedOn), "Bad authenticator code provided.");
                     OnTerminate().Wait();
+
+                    return;
                 }
-                else
-                {
-                    BotLogger.Debug("OnInternalSteamUserLoggedOn", "Steam Guard mobile code provided for login.");
-                    loginDetails.TwoFactorCode = mobileAuthCode;
-                    loginDetails.SentryFileHash = null;
-                }
+
+                LoginBackoff.Reset();
+                LoginDetails.TwoFactorCode = mobileAuthCode;
             }
             else if (loggedOnCallback.Result == EResult.TwoFactorCodeMismatch)
             {
+                BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Realigning authenticator clock.");
                 SteamTime.ReAlignTime().Wait();
+
+                BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Requesting authenticator code.");
                 var mobileAuthCode = OnAuthenticatorCodeRequired().Result;
 
                 if (string.IsNullOrEmpty(mobileAuthCode))
                 {
-                    BotLogger.Error("OnInternalSteamUserLoggedOn", "Bad Steam Guard mobile code.");
+                    BotLogger.Error(nameof(OnInternalSteamUserLoggedOn), "Bad authenticator code provided.");
                     OnTerminate().Wait();
+
+                    return;
                 }
-                else
-                {
-                    BotLogger.Debug("OnInternalSteamUserLoggedOn", "Steam Guard mobile code provided for login.");
-                    loginDetails.TwoFactorCode = mobileAuthCode;
-                    loginDetails.SentryFileHash = null;
-                }
+
+                LoginBackoff.Reset();
+                LoginDetails.TwoFactorCode = mobileAuthCode;
             }
             else if (loggedOnCallback.Result == EResult.AccountLogonDenied ||
                      loggedOnCallback.Result == EResult.InvalidLoginAuthCode)
             {
+                BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Requesting email verification code.");
                 var emailAuthCode = OnEmailCodeRequired().Result;
 
                 if (string.IsNullOrEmpty(emailAuthCode))
                 {
-                    BotLogger.Error("OnInternalSteamUserLoggedOn", "Bad Steam Guard email code.");
+                    BotLogger.Error(nameof(OnInternalSteamUserLoggedOn), "Bad email verification code provided.");
                     OnTerminate().Wait();
+
+                    return;
                 }
-                else
-                {
-                    BotLogger.Debug("OnInternalSteamUserLoggedOn", "Steam Guard email code provided for login.");
-                    loginDetails.AuthCode = emailAuthCode;
-                    loginDetails.SentryFileHash = null;
-                }
+
+                LoginBackoff.Reset();
+                LoginDetails.AuthCode = emailAuthCode;
             }
             else if (loggedOnCallback.Result == EResult.InvalidPassword)
             {
-                BotLogger.Error("OnInternalSteamUserLoggedOn", "Invalid user name and password combination.");
-                OnTerminate().Wait();
+                BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Requesting account password.");
+                var password = OnPasswordRequired().Result;
+
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    BotLogger.Error(nameof(OnInternalSteamUserLoggedOn), "Bad password provided.");
+                    OnTerminate().Wait();
+
+                    return;
+                }
+
+                LoginBackoff.Reset();
+                LoginDetails.Password = password;
             }
             else if (loggedOnCallback.Result == EResult.RateLimitExceeded)
             {
                 // ignore
             }
 
-            InternalInitializeLogin(loginDetails);
+            InternalInitializeLogin();
+        }
+
+        private void OnInternalSteamUserLoginKeyExchange(SteamUser.LoginKeyCallback loginKeyCallback)
+        {
+            if (!string.IsNullOrWhiteSpace(loginKeyCallback.LoginKey))
+            {
+                BotSettings.LoginKey = loginKeyCallback.LoginKey;
+                BotSettings.SaveSettings();
+
+                SteamUser.AcceptNewLoginKey(loginKeyCallback);
+
+                BotLogger.Debug(nameof(OnInternalSteamUserUpdateMachineAuthenticationCallback),
+                    "Login key exchange completed.");
+            }
         }
 
         private void OnInternalSteamUserNewWebApiUserNonce(SteamUser.WebAPIUserNonceCallback webAPIUserNonceCallback)
         {
             if (webAPIUserNonceCallback.Result == EResult.OK)
             {
-                var session = SteamClient.AuthenticateWebSession(WebAPI, webAPIUserNonceCallback.Nonce).Result;
+                BotLogger.Debug(nameof(OnInternalSteamUserNewWebApiUserNonce), "Refreshing session.");
+                var session = SteamClient.AuthenticateWebSession(webAPIUserNonceCallback.Nonce).Result;
 
-                if (session != null)
+                if (session != null && session.HasEnoughInfo())
                 {
-                    LoginBackoff.Reset();
-                    OnNewWebSessionAvailable(session).Wait();
+                    if (new SteamWebAccess(
+                            session,
+                            IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress)
+                                ? ipAddress
+                                : IPAddress.Any,
+                            string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy))
+                        .VerifySession().Result)
+                    {
+                        BotLogger.Debug(nameof(OnInternalSteamUserNewWebApiUserNonce), "Session is valid.");
+                        LoginBackoff.Reset();
+                        OnNewWebSessionAvailable(session).Wait();
+                    }
+                    else
+                    {
+                        SteamUser.RequestWebAPIUserNonce();
+                    }
                 }
             }
         }
@@ -442,37 +576,55 @@ namespace SDroid
         private void OnInternalSteamUserUpdateMachineAuthenticationCallback(
             SteamUser.UpdateMachineAuthCallback machineAuthCallback)
         {
-            using (var sha = new SHA1Managed())
+            BotLogger.Debug(nameof(OnInternalSteamUserUpdateMachineAuthenticationCallback),
+                "Machine authentication sentry file update request received.");
+
+            var sentryFile = new byte[0];
+
+            if (machineAuthCallback.FileName == BotSettings.SentryFileName && BotSettings.SentryFile != null)
             {
-                BotSettings.MachineHash = sha.ComputeHash(machineAuthCallback.Data);
+                sentryFile = BotSettings.SentryFile;
             }
 
-            BotSettings.SaveSettings();
+            Array.Resize(ref sentryFile,
+                Math.Max(sentryFile.Length,
+                    Math.Min(machineAuthCallback.BytesToWrite, machineAuthCallback.Data.Length) +
+                    machineAuthCallback.Offset));
+
+            Array.Copy(machineAuthCallback.Data, 0, sentryFile, machineAuthCallback.Offset,
+                Math.Min(machineAuthCallback.BytesToWrite, machineAuthCallback.Data.Length));
+
+            byte[] sentryFileHash;
+
+            using (var sha = new SHA1Managed())
+            {
+                sentryFileHash = sha.ComputeHash(sentryFile);
+            }
 
             var authResponse = new SteamUser.MachineAuthDetails
             {
                 BytesWritten = machineAuthCallback.BytesToWrite,
                 FileName = machineAuthCallback.FileName,
-                FileSize = machineAuthCallback.BytesToWrite,
+                FileSize = sentryFile.Length,
                 Offset = machineAuthCallback.Offset,
-                SentryFileHash = BotSettings.MachineHash,
+                SentryFileHash = sentryFileHash,
                 OneTimePassword = machineAuthCallback.OneTimePassword,
                 LastError = 0,
                 Result = EResult.OK,
                 JobID = machineAuthCallback.JobID
             };
 
+            BotSettings.SentryFileName = machineAuthCallback.FileName;
+            BotSettings.SentryFileHash = sentryFileHash;
+            BotSettings.SentryFile = sentryFile;
+            BotSettings.SaveSettings();
+
             SteamUser.SendMachineAuthResponse(authResponse);
         }
 
-
-        private void OnInternalUserNotifications(ClientUserNotificationsCallback clientUserNotificationsCallback)
+        private void OnInternalWalletInfoAvailable(SteamUser.WalletInfoCallback walletInfoCallback)
         {
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            if (this is ISteamKitNotificationBot notificationBot)
-            {
-                notificationBot.OnUserNotifications(clientUserNotificationsCallback.Notifications).Wait();
-            }
+            OnWalletInfoAvailable(walletInfoCallback).Wait();
         }
 
         private async Task SteamKitPolling(object o)
@@ -489,15 +641,16 @@ namespace SDroid
                     }
                     catch (WebException e)
                     {
-                        await BotLogger.Warning("SteamKitPolling", e.Message).ConfigureAwait(false);
-                        await BotLogger.Debug("SteamKitPolling", "Sleeping for 60 seconds.").ConfigureAwait(false);
+                        await BotLogger.Warning(nameof(SteamKitPolling), e.Message).ConfigureAwait(false);
+                        await BotLogger.Debug(nameof(SteamKitPolling), "Sleeping for 60 seconds.")
+                            .ConfigureAwait(false);
                         await Task.Delay(TimeSpan.FromSeconds(60)).ConfigureAwait(false);
                     }
                 }
             }
             catch (Exception e)
             {
-                await BotLogger.Error("SteamKitPolling", e.Message).ConfigureAwait(false);
+                await BotLogger.Error(nameof(SteamKitPolling), e.Message).ConfigureAwait(false);
             }
 
             await OnTerminate().ConfigureAwait(false);

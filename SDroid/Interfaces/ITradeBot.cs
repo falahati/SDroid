@@ -4,7 +4,7 @@ using SteamKit2;
 
 namespace SDroid.Interfaces
 {
-    public interface ITradeBot
+    public interface ITradeBot : ISteamBot
     {
         ITradeBotSettings TradeBotSettings { get; }
         TradeManager TradeManager { get; set; }

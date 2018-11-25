@@ -20,6 +20,6 @@ namespace SDroid.SteamMobile.Models.MobileLoginJson
         public string TokenSecure { get; set; }
 
         [JsonProperty("webcookie")]
-        public string Webcookie { get; set; }
+        public string WebCookie { get; set; }
     }
 }

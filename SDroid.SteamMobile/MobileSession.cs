@@ -28,8 +28,9 @@ namespace SDroid.SteamMobile
         /// <param name="steamId">The steam user identifier number.</param>
         /// <param name="steamLogin">The steam user login.</param>
         /// <param name="steamLoginSecure">The steam user login secure.</param>
-        /// <param name="webCookie">The session web cookie.</param>
         /// <param name="sessionId">The session identifier string.</param>
+        /// <param name="rememberLoginToken">The session remember login token</param>
+        /// <param name="steamMachineAuthenticationToken">The session steam guard machine authentication tokens</param>
         [JsonConstructor]
         // ReSharper disable once TooManyDependencies
         public MobileSession(
@@ -37,8 +38,11 @@ namespace SDroid.SteamMobile
             ulong? steamId,
             string steamLogin,
             string steamLoginSecure,
-            string webCookie,
-            string sessionId) : base(steamLogin, steamLoginSecure, sessionId)
+            string sessionId,
+            string rememberLoginToken,
+            Dictionary<ulong, string> steamMachineAuthenticationToken) :
+            base(steamId, steamLogin, steamLoginSecure, sessionId,
+                rememberLoginToken, steamMachineAuthenticationToken)
         {
             WebCookies.Add(new Cookie("mobileClientVersion", ClientVersion, "/",
                 CommunityCookieDomain));
@@ -47,63 +51,66 @@ namespace SDroid.SteamMobile
 
             OAuthToken = oAuthToken;
             SteamCommunityId = steamId;
-            WebCookie = webCookie;
         }
 
         public MobileSession()
         {
+            WebCookies.Add(new Cookie("mobileClientVersion", ClientVersion, "/",
+                CommunityCookieDomain));
+            WebCookies.Add(new Cookie("mobileClient", ClientName, "/",
+                CommunityCookieDomain));
         }
 
         internal MobileSession(MobileLoginOAuthModel oAuth, string sessionId) :
-            base(
+            this(
+                oAuth.OAuthToken,
+                oAuth.SteamId,
                 oAuth.SteamId + "%7C%7C" + oAuth.Token,
                 oAuth.SteamId + "%7C%7C" + oAuth.TokenSecure,
-                sessionId)
+                sessionId,
+                null,
+                new Dictionary<ulong, string>
+                {
+                    {oAuth.SteamId, oAuth.WebCookie}
+                })
         {
-            OAuthToken = oAuth.OAuthToken;
-            SteamCommunityId = oAuth.SteamId;
-            WebCookie = oAuth.Webcookie;
         }
 
         /// <summary>
         ///     Gets the OAuth token
         /// </summary>
-        public string OAuthToken { get; protected set; }
+        public string OAuthToken { get; }
 
         /// <summary>
         ///     Gets the steam user identifier number.
         /// </summary>
-        public ulong? SteamCommunityId
+        public new ulong? SteamCommunityId
         {
             get
             {
                 var stringValue = WebCookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl))["steamid"]
                     ?.Value;
 
-                if (string.IsNullOrWhiteSpace(stringValue))
+                if (!string.IsNullOrWhiteSpace(stringValue) && ulong.TryParse(stringValue, out var steamId))
                 {
-                    return null;
+                    return steamId;
                 }
 
-                ulong.TryParse(stringValue, out var steamId);
-
-                return steamId;
+                return base.SteamCommunityId;
             }
-            protected set => WebCookies.Add(new Cookie("steamid", value?.ToString() ?? "", "/",
-                CommunityCookieDomain));
+            protected set
+            {
+                WebCookies.Add(new Cookie("steamid", value?.ToString() ?? "", "/",
+                    CommunityCookieDomain));
+                base.SteamCommunityId = value;
+            }
         }
-
-        /// <summary>
-        ///     Gets the web cookie associated with this session.
-        /// </summary>
-        public string WebCookie { get; protected set; }
 
         /// <inheritdoc />
         public bool Equals(MobileSession other)
         {
             return other != null &&
                    base.Equals(other) &&
-                   WebCookie == other.WebCookie &&
                    OAuthToken == other.OAuthToken &&
                    SteamCommunityId == other.SteamCommunityId;
         }
@@ -121,7 +128,15 @@ namespace SDroid.SteamMobile
         /// <inheritdoc />
         public override WebSession Clone()
         {
-            return new MobileSession(OAuthToken, SteamCommunityId, SteamLogin, SteamLoginSecure, WebCookie, SessionId);
+            return new MobileSession(
+                OAuthToken,
+                SteamCommunityId,
+                SteamLogin,
+                SteamLoginSecure,
+                SessionId,
+                RememberLoginToken,
+                SteamMachineAuthenticationToken
+            );
         }
 
         /// <inheritdoc />
@@ -148,9 +163,6 @@ namespace SDroid.SteamMobile
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SessionId);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SteamLogin);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SteamLoginSecure);
-            // ReSharper disable once NonReadonlyMemberInGetHashCode
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(WebCookie);
-            // ReSharper disable once NonReadonlyMemberInGetHashCode
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(OAuthToken);
             hashCode = hashCode * -1521134295 + SteamCommunityId.GetHashCode();
 
@@ -168,7 +180,6 @@ namespace SDroid.SteamMobile
         {
             return !base.HasEnoughInfo() &&
                    !string.IsNullOrWhiteSpace(OAuthToken) &&
-                   !string.IsNullOrWhiteSpace(WebCookie) &&
                    SteamCommunityId > 0;
         }
 

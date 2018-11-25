@@ -8,9 +8,16 @@ namespace SDroidTest
 {
     public class TradeOfferBot : SteamBot, ITradeOfferBot
     {
+        private UserInventory _myInventory;
+
         /// <inheritdoc />
-        public TradeOfferBot(TradeOfferBotSettings settings, TradeOfferLogger botLogger) : base(settings, botLogger)
+        public TradeOfferBot(TradeOfferBotSettings settings, Logger botLogger) : base(settings, botLogger)
         {
+        }
+
+        public new TradeOfferBotSettings BotSettings
+        {
+            get => base.BotSettings as TradeOfferBotSettings;
         }
 
         /// <inheritdoc />
@@ -80,7 +87,7 @@ namespace SDroidTest
         /// <inheritdoc />
         public ITradeOfferBotSettings TradeOfferBotSettings
         {
-            get => BotSettings as ITradeOfferBotSettings;
+            get => BotSettings;
         }
 
         /// <inheritdoc />
@@ -89,7 +96,33 @@ namespace SDroidTest
         /// <inheritdoc />
         protected override Task<string> OnAuthenticatorCodeRequired()
         {
-            return Task.FromResult(ConsoleWriter.Default.PrintQuestion("Enter 2FA Code"));
+            return Task.FromResult(ConsoleWriter.Default.PrintQuestion("Steam Guard Code"));
+        }
+
+        /// <inheritdoc />
+        protected override async Task OnLoggedIn()
+        {
+            await BotLogger.Info("OnLoggedIn", "Retrieving bot's inventory.").ConfigureAwait(false);
+
+            if (_myInventory == null)
+            {
+                _myInventory = await UserInventory.GetInventory(WebAccess, SteamId).ConfigureAwait(false);
+            }
+
+            _myInventory.ClearCache();
+
+            var assets = await _myInventory.GetAssets().ConfigureAwait(false);
+
+            await BotLogger.Info("OnLoggedIn", "{0} assets found on bot's inventory.", assets.Length)
+                .ConfigureAwait(false);
+
+            await base.OnLoggedIn().ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        protected override Task<string> OnPasswordRequired()
+        {
+            return Task.FromResult(ConsoleWriter.Default.PrintQuestion("Password"));
         }
     }
 }

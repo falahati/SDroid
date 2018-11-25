@@ -16,6 +16,12 @@ namespace SDroid.SteamWeb.InternalModels
         [JsonProperty("emaildomain")]
         public string EmailDomain { get; set; }
 
+        [JsonProperty("transfer_urls")]
+        public string[] TransferUrls { get; set; }
+
+        [JsonProperty("transfer_parameters")]
+        public LoginResponseTransferParameters TransferParameters { get; set; }
+
         [JsonProperty("emailsteamid")]
         public ulong EmailSteamId { get; set; }
 

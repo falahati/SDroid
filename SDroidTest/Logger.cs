@@ -5,7 +5,7 @@ using SDroid;
 
 namespace SDroidTest
 {
-    public class TradeOfferLogger : IBotLogger
+    public class Logger : IBotLogger
     {
         /// <inheritdoc />
         public Task Debug(string scope, string message, params object[] formatParams)

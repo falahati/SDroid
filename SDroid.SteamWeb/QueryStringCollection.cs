@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Web;
 
 namespace SDroid.SteamWeb
 {
@@ -93,7 +94,8 @@ namespace SDroid.SteamWeb
 
             if (value is byte[] byteArray)
             {
-                return Convert.ToBase64String(byteArray);
+                //return Convert.ToBase64String(byteArray);
+                return HttpUtility.UrlEncode(byteArray);
             }
 
             return value?.ToString() ?? "";

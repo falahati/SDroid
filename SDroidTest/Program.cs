@@ -7,11 +7,27 @@ namespace SDroidTest
     {
         private static void Main()
         {
-            var bot = new TradeOfferBot(new TradeOfferBotSettings
+            ConsoleNavigation.Default.PrintNavigation(new[]
             {
-                Username = ConsoleWriter.Default.PrintQuestion("Username"),
-                Password = ConsoleWriter.Default.PrintQuestion("Password")
-            }, new TradeOfferLogger());
+                new ConsoleNavigationItem("TradeOfferBot", (i, item) => TradeOfferBot()),
+                new ConsoleNavigationItem("SteamKitBot", (i, item) => SteamKitBot())
+            });
+        }
+
+        private static void SteamKitBot()
+        {
+            var bot = new SteamKitBot(SteamKitBotSettings.LoadSaved(), new Logger());
+            bot.StartBot().Wait();
+
+            while (true)
+            {
+                Thread.Sleep(300);
+            }
+        }
+
+        private static void TradeOfferBot()
+        {
+            var bot = new TradeOfferBot(TradeOfferBotSettings.LoadSaved(), new Logger());
             bot.StartBot().Wait();
 
             while (true)

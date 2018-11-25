@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using Newtonsoft.Json;
+using SDroid.SteamWeb.InternalModels;
 
 namespace SDroid.SteamWeb
 {
@@ -11,28 +13,57 @@ namespace SDroid.SteamWeb
     /// <seealso cref="System.IEquatable{WebSession}" />
     public class WebSession : IEquatable<WebSession>
     {
+        private ulong? _steamCommunityId;
         public const string CommunityCookieDomain = ".steamcommunity.com";
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="WebSession" /> class.
         /// </summary>
+        /// <param name="steamId">The steam user identifier number.</param>
         /// <param name="steamLogin">The steam user login.</param>
         /// <param name="steamLoginSecure">The steam user login secure.</param>
         /// <param name="sessionId">The session identifier string.</param>
+        /// <param name="rememberLoginToken">The session remember login token</param>
+        /// <param name="steamMachineAuthenticationToken">The session steam guard machine authentication tokens</param>
         [JsonConstructor]
         // ReSharper disable once TooManyDependencies
         public WebSession(
+            ulong? steamId, 
             string steamLogin,
             string steamLoginSecure,
-            string sessionId) : this()
+            string sessionId,
+            string rememberLoginToken,
+            Dictionary<ulong, string> steamMachineAuthenticationToken) : this()
         {
-            WebCookies.Add(new Cookie("Steam_Language", SteamWebAccess.SteamLanguage, "/",
-                CommunityCookieDomain));
-            WebCookies.Add(new Cookie("dob", "", "/", CommunityCookieDomain));
-
             SteamLogin = steamLogin;
             SteamLoginSecure = steamLoginSecure;
             SessionId = sessionId;
+            RememberLoginToken = rememberLoginToken;
+            SteamMachineAuthenticationToken = steamMachineAuthenticationToken;
+            SteamCommunityId = steamId;
+        }
+
+        internal WebSession(LoginResponseTransferParameters transferParameters, string sessionId) :
+            this(
+                transferParameters.SteamId,
+                transferParameters.SteamId + "%7C%7C" + transferParameters.Token,
+                transferParameters.SteamId + "%7C%7C" + transferParameters.TokenSecure,
+                sessionId,
+                null,
+                new Dictionary<ulong, string>
+                {
+                    {transferParameters.SteamId, transferParameters.WebCookie}
+                })
+        {
+        }
+
+        /// <summary>
+        ///     Gets the steam user identifier number.
+        /// </summary>
+        public ulong? SteamCommunityId
+        {
+            get => _steamCommunityId ?? SteamMachineAuthenticationToken?.Keys.FirstOrDefault();
+            protected set => _steamCommunityId = value;
         }
 
         /// <summary>
@@ -41,6 +72,9 @@ namespace SDroid.SteamWeb
         public WebSession()
         {
             WebCookies = new CookieContainer();
+            WebCookies.Add(new Cookie("Steam_Language", SteamWebAccess.SteamLanguage, "/",
+                CommunityCookieDomain));
+            WebCookies.Add(new Cookie("dob", "", "/", CommunityCookieDomain));
         }
 
         /// <summary>
@@ -100,6 +134,37 @@ namespace SDroid.SteamWeb
                 });
         }
 
+        /// <summary>
+        ///     Gets the web session steam guard tokens
+        /// </summary>
+        public Dictionary<ulong, string> SteamMachineAuthenticationToken
+        {
+            get => WebCookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl)).Cast<Cookie>()
+                .Where(c =>
+                    c?.Name.StartsWith("steamMachineAuth") == true &&
+                    !string.IsNullOrWhiteSpace(c.Value) &&
+                    ulong.TryParse(c.Name.Substring("steamMachineAuth".Length), out _)
+                )
+                .ToDictionary(
+                    c => ulong.Parse(c.Name.Substring("steamMachineAuth".Length)),
+                    c => c.Value
+                );
+            protected set
+            {
+                if (value == null)
+                {
+                    return;
+                }
+
+                foreach (var pair in value)
+                {
+                    WebCookies.Add(new Cookie("steamMachineAuth" + pair.Key, pair.Value ?? "", "/",
+                        CommunityCookieDomain));
+                }
+            }
+        }
+
+        [JsonIgnore]
         protected CookieContainer WebCookies { get; }
 
         /// <inheritdoc />
@@ -145,7 +210,8 @@ namespace SDroid.SteamWeb
 
         public virtual WebSession Clone()
         {
-            return new WebSession(SteamLogin, SteamLoginSecure, SessionId);
+            return new WebSession(SteamCommunityId, SteamLogin, SteamLoginSecure, SessionId, RememberLoginToken,
+                SteamMachineAuthenticationToken);
         }
 
         /// <summary>

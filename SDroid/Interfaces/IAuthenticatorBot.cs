@@ -3,7 +3,7 @@ using SDroid.SteamMobile;
 
 namespace SDroid.Interfaces
 {
-    public interface IAuthenticatorBot
+    public interface IAuthenticatorBot : ISteamBot
     {
         IAuthenticatorSettings BotAuthenticatorSettings { get; }
         Task OnAuthenticatorConfirmationAvailable(Confirmation confirmation);

@@ -54,7 +54,7 @@ namespace SDroid.SteamWeb
         /// <value>
         ///     The password of the Steam account.
         /// </value>
-        public string Password { get; }
+        public string Password { get; set; }
 
         /// <summary>
         ///     Gets or sets the two factor authentication code required by the login process.

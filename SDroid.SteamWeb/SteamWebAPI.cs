@@ -208,6 +208,21 @@ namespace SDroid.SteamWeb
             var url = new Uri(SteamAPIBaseUri,
                 string.Format("{0}/{1}/{2}/", interfaceName, functionName, functionVersion)).AbsoluteUri;
 
+            if (functionArguments != null)
+            {
+                if (interfaceName.EndsWith("Service"))
+                {
+                    functionArguments = new QueryStringBuilder
+                    {
+                        {
+                            "input_json",
+                            JsonConvert.SerializeObject(
+                                functionArguments.ToDictionary(pair => pair.Key, pair => pair.Value))
+                        }
+                    };
+                }
+            }
+
             var queryString = new QueryStringBuilder
             {
                 {"language", "en_us"}
@@ -218,26 +233,19 @@ namespace SDroid.SteamWeb
                 queryString.Add("key", ApiKey);
             }
 
-            if (functionArguments != null)
+            if (requestMethod == SteamWebAccessRequestMethod.Get)
             {
-                if (interfaceName.EndsWith("Service"))
-                {
-                    queryString.Add("input_json",
-                        JsonConvert.SerializeObject(
-                            functionArguments.ToDictionary(pair => pair.Key, pair => pair.Value)));
-                }
-                else
-                {
-                    queryString = queryString.Concat(functionArguments);
-                }
+                functionArguments = queryString.Concat(functionArguments);
             }
-
-            url = queryString.AppendToUrl(url);
+            else
+            {
+                url = queryString.AppendToUrl(url);
+            }
 
             return new SteamWebAccessRequest(
                 url,
                 requestMethod,
-                null
+                functionArguments
             )
             {
                 Referer = SteamAPIBaseUrl,

@@ -15,8 +15,8 @@ namespace SDroid.SteamKit
             switch (packetMsg.MsgType)
             {
                 case EMsg.ClientNewLoginKey:
-                    RequestCommentNotifications();
-                    RequestNotifications();
+                    RequestClientNotifications();
+                    RequestUserNotifications();
 
                     break;
 
@@ -45,35 +45,36 @@ namespace SDroid.SteamKit
         /// <summary>
         ///     Request to see if the client user has any comment notifications
         /// </summary>
-        public AsyncJob<ClientCommentNotificationsCallback> RequestCommentNotifications()
+        public AsyncJob<ClientCommentNotificationsCallback> RequestClientNotifications()
         {
             var reqMsg = new ClientMsgProtobuf<CMsgClientRequestCommentNotifications>(
                 EMsg.ClientRequestCommentNotifications
             )
             {
-                SourceJobID = Client.GetNextJobID()
+                //SourceJobID = Client.GetNextJobID()
             };
 
             Client.Send(reqMsg);
-
-            return new AsyncJob<ClientCommentNotificationsCallback>(Client, reqMsg.SourceJobID);
+            return null;
+            //return new AsyncJob<ClientCommentNotificationsCallback>(Client, reqMsg.SourceJobID);
         }
 
         /// <summary>
         ///     Request to see if the client user has any notifications.
         /// </summary>
-        public AsyncJob<ClientUserNotificationsCallback> RequestNotifications()
+        public AsyncJob<ClientUserNotificationsCallback> RequestUserNotifications()
         {
             var reqMsg =
                 new ClientMsgProtobuf<CMsgClientRequestItemAnnouncements>(
                     EMsg.ClientRequestItemAnnouncements
                 )
                 {
-                    SourceJobID = Client.GetNextJobID()
+                    //SourceJobID = Client.GetNextJobID()
                 };
             Client.Send(reqMsg);
 
-            return new AsyncJob<ClientUserNotificationsCallback>(Client, reqMsg.SourceJobID);
+            return null;
+            // return new AsyncJob<ClientUserNotificationsCallback>(Client, reqMsg.SourceJobID);
         }
     }
 }

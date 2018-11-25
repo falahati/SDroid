@@ -3,7 +3,7 @@ using SteamKit2;
 
 namespace SDroid.Interfaces
 {
-    public interface ISteamKitChatBot
+    public interface ISteamKitChatBot : ISteamKitBot
     {
         Task OnChatGameInvited(SteamID partnerSteamId, string message);
         Task OnChatHistoricMessageReceived(SteamID partnerSteamId, string message);

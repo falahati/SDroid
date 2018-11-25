@@ -14,7 +14,7 @@ namespace SDroid.SteamMobile
         protected const string ClientOAuthId = "DE45CD61";
         protected const string ClientOAuthScope = "read_profile write_profile read_client write_client";
         private const string MobileLoginUrl = SteamWebAccess.CommunityBaseUrl + "/mobilelogin";
-
+        
         /// <inheritdoc />
         protected override async Task<SteamWebAccessRequest> ConstructLoginRequest(LoginCredentials credentials)
         {
@@ -57,7 +57,7 @@ namespace SDroid.SteamMobile
                 {
                     throw new UserLoginException(UserLoginErrorCode.GeneralFailure, this);
                 }
-
+                
                 SteamWebAccess = new SteamMobileWebAccess(new MobileSession(loginResponse.OAuthToken,
                     SteamWebAccess?.Session?.SessionId));
             }

@@ -158,10 +158,9 @@ namespace SDroid.SteamWeb
                 {
                     throw new UserLoginException(UserLoginErrorCode.BadCredentials, this);
                 }
-
+                
                 var sessionData = SteamWebAccess.Session;
                 ResetStates();
-
                 return sessionData;
             }
             finally
@@ -383,7 +382,22 @@ namespace SDroid.SteamWeb
                 throw new UserLoginException(UserLoginErrorCode.TooManyFailedLoginAttempts, this);
             }
 
-            return Task.FromResult(loginResponse.LoginComplete);
+            if (!loginResponse.LoginComplete)
+            {
+                return Task.FromResult(false);
+            }
+
+            if (loginResponse.TransferParameters != null && !string.IsNullOrWhiteSpace(SteamWebAccess?.Session?.SessionId))
+            {
+                var newSession = new WebSession(loginResponse.TransferParameters, SteamWebAccess.Session.SessionId);
+
+                if (newSession.HasEnoughInfo())
+                {
+                    SteamWebAccess = new SteamWebAccess(newSession);
+                }
+            }
+
+            return Task.FromResult(true);
         }
 
 

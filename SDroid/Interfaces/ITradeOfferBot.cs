@@ -3,7 +3,7 @@ using SDroid.SteamTrade;
 
 namespace SDroid.Interfaces
 {
-    public interface ITradeOfferBot
+    public interface ITradeOfferBot : ISteamBot
     {
         ITradeOfferBotSettings TradeOfferBotSettings { get; }
         TradeOfferManager TradeOfferManager { get; set; }

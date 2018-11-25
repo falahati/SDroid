@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using System.IO;
+using ConsoleUtilities;
+using Newtonsoft.Json;
 using SDroid.Interfaces;
 using SDroid.SteamTrade.Models.TradeOffer;
 using SDroid.SteamWeb;
@@ -14,19 +16,16 @@ namespace SDroidTest
         public string DomainName { get; set; }
 
         /// <inheritdoc />
-        public string Password { get; set; }
+        public string Proxy { get; set; }
 
         /// <inheritdoc />
-        public IWebProxy Proxy { get; set; } = null;
-
-        /// <inheritdoc />
-        public IPAddress PublicIPAddress { get; set; } = IPAddress.Any;
+        public string PublicIPAddress { get; set; } = "0.0.0.0";
 
         /// <inheritdoc />
         public WebSession Session { get; set; }
 
         /// <inheritdoc />
-        public int SessionCheckInterval { get; set; } = 10;
+        public int SessionCheckInterval { get; set; } = 60;
 
         /// <inheritdoc />
         public string Username { get; set; }
@@ -34,9 +33,44 @@ namespace SDroidTest
         /// <inheritdoc />
         public void SaveSettings()
         {
+            try
+            {
+                var json = JsonConvert.SerializeObject(this, Formatting.Indented);
+                File.WriteAllText("TradeOfferBotSettings.json", json);
+            }
+            catch
+            {
+                // ignored
+            }
         }
 
         /// <inheritdoc />
         public TradeOfferOptions TradeOfferOptions { get; set; }
+
+        public static TradeOfferBotSettings LoadSaved()
+        {
+            if (File.Exists("TradeOfferBotSettings.json"))
+            {
+                try
+                {
+                    var json = File.ReadAllText("TradeOfferBotSettings.json");
+                    var retVal = JsonConvert.DeserializeObject<TradeOfferBotSettings>(json);
+
+                    if (retVal != null)
+                    {
+                        return retVal;
+                    }
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+
+            return new TradeOfferBotSettings
+            {
+                Username = ConsoleWriter.Default.PrintQuestion("Username")
+            };
+        }
     }
 }
