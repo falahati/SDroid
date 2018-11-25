@@ -232,15 +232,15 @@ namespace SDroid.SteamWeb
 
         public virtual async Task<bool> VerifySession()
         {
-            if (!string.IsNullOrWhiteSpace(Session?.SteamLogin) &&
-                !string.IsNullOrWhiteSpace(Session?.SteamLoginSecure))
+            if (string.IsNullOrWhiteSpace(Session?.SteamLogin) &&
+                string.IsNullOrWhiteSpace(Session?.SteamLoginSecure))
             {
                 return false;
             }
 
             (await FetchBinary(new SteamWebAccessRequest(CommunityBaseUrl)).ConfigureAwait(false)).Dispose();
 
-            return !string.IsNullOrWhiteSpace(Session?.SteamLogin) &&
+            return !string.IsNullOrWhiteSpace(Session?.SteamLogin) ||
                    !string.IsNullOrWhiteSpace(Session?.SteamLoginSecure);
         }
 
