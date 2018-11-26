@@ -465,6 +465,8 @@ namespace SDroid
             {
                 while (authenticator.BotAuthenticatorSettings.Authenticator == null)
                 {
+                    CancellationTokenSource.Token.ThrowIfCancellationRequested();
+
                     await BotLogger
                         .Debug(nameof(OnAuthenticatorCodeRequired), "Waiting for authenticator to become available.")
                         .ConfigureAwait(false);
