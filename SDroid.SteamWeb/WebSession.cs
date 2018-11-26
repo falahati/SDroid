@@ -24,7 +24,7 @@ namespace SDroid.SteamWeb
         /// <param name="steamLoginSecure">The steam user login secure.</param>
         /// <param name="sessionId">The session identifier string.</param>
         /// <param name="rememberLoginToken">The session remember login token</param>
-        /// <param name="steamMachineAuthenticationToken">The session steam guard machine authentication tokens</param>
+        /// <param name="steamMachineAuthenticationTokens">The session steam guard machine authentication tokens</param>
         [JsonConstructor]
         // ReSharper disable once TooManyDependencies
         public WebSession(
@@ -33,13 +33,13 @@ namespace SDroid.SteamWeb
             string steamLoginSecure,
             string sessionId,
             string rememberLoginToken,
-            Dictionary<ulong, string> steamMachineAuthenticationToken) : this()
+            Dictionary<ulong, string> steamMachineAuthenticationTokens) : this()
         {
             SteamLogin = steamLogin;
             SteamLoginSecure = steamLoginSecure;
             SessionId = sessionId;
             RememberLoginToken = rememberLoginToken;
-            SteamMachineAuthenticationToken = steamMachineAuthenticationToken;
+            SteamMachineAuthenticationTokens = steamMachineAuthenticationTokens;
             SteamCommunityId = steamId;
         }
 
@@ -62,7 +62,7 @@ namespace SDroid.SteamWeb
         /// </summary>
         public ulong? SteamCommunityId
         {
-            get => _steamCommunityId ?? SteamMachineAuthenticationToken?.Keys.FirstOrDefault();
+            get => _steamCommunityId ?? SteamMachineAuthenticationTokens?.Keys.FirstOrDefault();
             protected set => _steamCommunityId = value;
         }
 
@@ -137,7 +137,7 @@ namespace SDroid.SteamWeb
         /// <summary>
         ///     Gets the web session steam guard tokens
         /// </summary>
-        public Dictionary<ulong, string> SteamMachineAuthenticationToken
+        public Dictionary<ulong, string> SteamMachineAuthenticationTokens
         {
             get => WebCookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl)).Cast<Cookie>()
                 .Where(c =>
@@ -211,7 +211,7 @@ namespace SDroid.SteamWeb
         public virtual WebSession Clone()
         {
             return new WebSession(SteamCommunityId, SteamLogin, SteamLoginSecure, SessionId, RememberLoginToken,
-                SteamMachineAuthenticationToken);
+                SteamMachineAuthenticationTokens);
         }
 
         /// <summary>
