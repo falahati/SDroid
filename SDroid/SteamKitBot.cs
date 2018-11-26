@@ -128,21 +128,24 @@ namespace SDroid
         }
 
         /// <inheritdoc />
-        protected override Task BotLogin()
+        protected override async Task BotLogin()
         {
             lock (this)
             {
                 if (BotStatus == SteamBotStatus.LoggingIn)
                 {
-                    return Task.CompletedTask;
+                    return;
                 }
 
                 BotStatus = SteamBotStatus.LoggingIn;
             }
 
-            InternalInitializeLogin();
+            await InternalInitializeLogin().ConfigureAwait(false);
 
-            return Task.CompletedTask;
+            while (BotStatus == SteamBotStatus.LoggingIn)
+            {
+                await Task.Delay(200).ConfigureAwait(false);
+            }
         }
 
         protected override async Task OnCheckSession()
