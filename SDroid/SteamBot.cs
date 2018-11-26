@@ -96,19 +96,21 @@ namespace SDroid
             AuthenticatorConfirmationTimer?.Dispose();
 
             await BotLogger.Debug(nameof(StopBot), "Waiting for bot to stop.").ConfigureAwait(false);
+            
+            await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
 
-            while (true)
-            {
-                lock (this)
-                {
-                    if (BotStatus == SteamBotStatus.Faulted)
-                    {
-                        break;
-                    }
-                }
+            //while (true)
+            //{
+            //    lock (this)
+            //    {
+            //        if (BotStatus == SteamBotStatus.Faulted)
+            //        {
+            //            break;
+            //        }
+            //    }
 
-                await Task.Delay(TimeSpan.FromMilliseconds(300)).ConfigureAwait(false);
-            }
+            //    await Task.Delay(TimeSpan.FromMilliseconds(300)).ConfigureAwait(false);
+            //}
 
             // ReSharper disable once SuspiciousTypeConversion.Global
             if (this is ITradeOfferBot offerController)
