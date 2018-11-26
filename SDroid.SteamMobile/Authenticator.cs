@@ -31,7 +31,7 @@ namespace SDroid.SteamMobile
         private const string MobileConfirmationsOperationsUrl =
             SteamWebAccess.CommunityBaseUrl + "/mobileconf/multiajaxop";
 
-        private const string MobileConfirmationsUrl = SteamWebAccess.CommunityBaseUrl + "/mobileconf/confirmation";
+        private const string MobileConfirmationsUrl = SteamWebAccess.CommunityBaseUrl + "/mobileconf/conf";
         protected const long SteamGuardCodeGenerationStep = 30L;
         protected const int SteamGuardCodeLength = 5;
 
@@ -343,7 +343,7 @@ namespace SDroid.SteamMobile
         /// <exception cref="WebException">Failed to communicate with steam's network or a bad response received.</exception>
         public async Task<Confirmation[]> FetchConfirmations()
         {
-            var parameters = await GetConfirmationParameters("confirmation").ConfigureAwait(false);
+            var parameters = await GetConfirmationParameters("conf").ConfigureAwait(false);
             var response = await OperationRetryHelper.Default.RetryOperationAsync(
                 () => SteamWeb.FetchString(
                     new SteamWebAccessRequest(
@@ -414,7 +414,7 @@ namespace SDroid.SteamMobile
         public async Task<string> GetConfirmationDetails(Confirmation confirmation)
         {
             var parameters = await GetConfirmationParameters("details").ConfigureAwait(false);
-            var referer = (await GetConfirmationParameters("confirmation").ConfigureAwait(false)).AppendToUrl(
+            var referer = (await GetConfirmationParameters("conf").ConfigureAwait(false)).AppendToUrl(
                 MobileConfirmationsUrl);
             var serverResponse = await OperationRetryHelper.Default.RetryOperationAsync(
                 () => SteamWeb.FetchObject<ConfirmationDetailsResponse>(
@@ -522,7 +522,7 @@ namespace SDroid.SteamMobile
                 var dataHash = hmac.ComputeHash(dataArray);
                 var encodedDataHash = Convert.ToBase64String(dataHash, Base64FormattingOptions.None);
 
-                return WebUtility.UrlEncode(encodedDataHash);
+                return encodedDataHash;
             }
         }
 
@@ -530,7 +530,7 @@ namespace SDroid.SteamMobile
         {
             if (string.IsNullOrEmpty(DeviceId))
             {
-                throw new ArgumentException("Device ID is not present");
+                throw new ArgumentException("Device Id is not present");
             }
 
             var time = await SteamTime.GetTime().ConfigureAwait(false);
@@ -550,7 +550,7 @@ namespace SDroid.SteamMobile
         {
             var operation = allow ? "allow" : "cancel";
             var parameters = await GetConfirmationParameters(operation).ConfigureAwait(false);
-            var referer = (await GetConfirmationParameters("confirmation").ConfigureAwait(false)).AppendToUrl(
+            var referer = (await GetConfirmationParameters("conf").ConfigureAwait(false)).AppendToUrl(
                 MobileConfirmationsUrl);
 
             return (await OperationRetryHelper.Default.RetryOperationAsync(
@@ -583,7 +583,7 @@ namespace SDroid.SteamMobile
         {
             var operation = allow ? "allow" : "cancel";
             var parameters = await GetConfirmationParameters(operation).ConfigureAwait(false);
-            var referer = (await GetConfirmationParameters("confirmation").ConfigureAwait(false)).AppendToUrl(
+            var referer = (await GetConfirmationParameters("conf").ConfigureAwait(false)).AppendToUrl(
                 MobileConfirmationsUrl);
 
             return (await OperationRetryHelper.Default.RetryOperationAsync(
