@@ -235,16 +235,17 @@ namespace SDroid
                             .ConfigureAwait(false);
 
                         if (await
-                            authenticatorController.BotAuthenticatorSettings.Authenticator.Session.RefreshSession()
+                            authenticatorController.BotAuthenticatorSettings.Authenticator.Session.RefreshSession(webAccess)
                                 .ConfigureAwait(false))
                         {
-                            await BotLogger.Debug(nameof(BotLogin), "Authenticator session is valid.")
-                                .ConfigureAwait(false);
-                            await OnNewWebSessionAvailable(
-                                authenticatorController.BotAuthenticatorSettings.Authenticator.Session
-                            ).ConfigureAwait(false);
+                            if (await webAccess.VerifySession().ConfigureAwait(false))
+                            {
+                                await BotLogger.Debug(nameof(BotLogin), "Session is valid.").ConfigureAwait(false);
+                                WebAccess = webAccess;
+                                await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
 
-                            return;
+                                return;
+                            }
                         }
                     }
                 }
