@@ -205,7 +205,7 @@ namespace SDroid
             }
 
             BotLogger.Warning(nameof(OnStalledLoginCheck), "Login stalled, trying again.");
-            InternalInitializeLogin();
+            InternalInitializeLogin().Wait();
         }
 
         protected virtual Task OnWalletInfoAvailable(SteamUser.WalletInfoCallback walletInfo)
@@ -213,10 +213,10 @@ namespace SDroid
             return Task.CompletedTask;
         }
 
-        private void InternalInitializeLogin()
+        private async Task InternalInitializeLogin()
         {
-            LoginBackoff.Delay().Wait();
-            OnLoggingIn().Wait();
+            await LoginBackoff.Delay().ConfigureAwait(false);
+            await OnLoggingIn().ConfigureAwait(false);
 
             lock (this)
             {
@@ -225,7 +225,7 @@ namespace SDroid
                     TimeSpan.FromSeconds(BotSettings.LoginTimeout), TimeSpan.FromMilliseconds(-1));
             }
 
-            BotLogger.Debug(nameof(InternalInitializeLogin), "Starting login process.");
+            var _ = BotLogger.Debug(nameof(InternalInitializeLogin), "Starting login process.");
             LoginDetails = LoginDetails ??
                            new SteamUser.LogOnDetails
                            {
@@ -238,13 +238,15 @@ namespace SDroid
 
             if (string.IsNullOrWhiteSpace(LoginDetails.Password) && string.IsNullOrWhiteSpace(LoginDetails.LoginKey))
             {
-                BotLogger.Debug(nameof(InternalInitializeLogin), "Requesting account password.");
+                // ReSharper disable once RedundantAssignment
+                _ = BotLogger.Debug(nameof(InternalInitializeLogin), "Requesting account password.");
                 var password = OnPasswordRequired().Result;
 
                 if (string.IsNullOrWhiteSpace(password))
                 {
-                    BotLogger.Error(nameof(InternalInitializeLogin), "Bad password provided.");
-                    OnTerminate().Wait();
+                    // ReSharper disable once RedundantAssignment
+                    _ = BotLogger.Error(nameof(InternalInitializeLogin), "Bad password provided.");
+                    await OnTerminate().ConfigureAwait(false);
 
                     return;
                 }
@@ -258,7 +260,7 @@ namespace SDroid
         private void OnInternalAccountInfoAvailable(SteamUser.AccountInfoCallback accountInfoCallback)
         {
             BotLogger.Debug(nameof(OnInternalAccountInfoAvailable), "Account info available.");
-            OnAccountInfoAvailable(accountInfoCallback).Wait();
+            OnAccountInfoAvailable(accountInfoCallback);
         }
 
         private void OnInternalFriendSteamFriendsMessageReceived(SteamFriends.FriendMsgCallback friendMsgCallback)
@@ -281,41 +283,38 @@ namespace SDroid
 
                         break;
                     case EChatEntryType.InviteGame:
-                        chatBot.OnChatGameInvited(friendMsgCallback.Sender, friendMsgCallback.Message).Wait();
+                        chatBot.OnChatGameInvited(friendMsgCallback.Sender, friendMsgCallback.Message);
 
                         break;
                     case EChatEntryType.Typing:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.Typing).Wait();
+                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.Typing);
 
                         break;
                     case EChatEntryType.WasKicked:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.Kicked).Wait();
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LeftChat).Wait();
+                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.Kicked);
+                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LeftChat);
 
                         break;
                     case EChatEntryType.WasBanned:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.Banned).Wait();
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LeftChat).Wait();
+                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.Banned);
+                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LeftChat);
 
                         break;
                     case EChatEntryType.Disconnected:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.Disconnected)
-                            .Wait();
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LeftChat).Wait();
+                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.Disconnected);
+                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LeftChat);
 
                         break;
                     case EChatEntryType.LeftConversation:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LeftChat).Wait();
+                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LeftChat);
 
                         break;
                     case EChatEntryType.Entered:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.EnteredChat)
-                            .Wait();
+                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.EnteredChat);
 
                         break;
                     case EChatEntryType.LinkBlocked:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LinkBlocked)
-                            .Wait();
+                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LinkBlocked);
 
                         break;
                 }
@@ -332,7 +331,7 @@ namespace SDroid
                 BotStatus = SteamBotStatus.Connected;
             }
 
-            OnConnected().Wait();
+            OnConnected();
         }
 
         private void OnInternalSteamClientDisconnect(SteamClient.DisconnectedCallback disconnectedCallback)
@@ -353,7 +352,7 @@ namespace SDroid
                     BotStatus = SteamBotStatus.Connecting;
                 }
 
-                OnDisconnected().Wait();
+                OnDisconnected();
                 ConnectionBackoff.Delay().Wait();
 
                 BotLogger.Debug(nameof(OnInternalSteamClientDisconnect), "Reconnecting to the steam network.");
@@ -361,7 +360,7 @@ namespace SDroid
             }
             else
             {
-                OnDisconnected().Wait();
+                OnDisconnected();
             }
         }
 
@@ -400,11 +399,11 @@ namespace SDroid
                 EResult.InvalidCEGSubmission == loggedOffCallback.Result ||
                 EResult.AccountLoginDeniedThrottle == loggedOffCallback.Result)
             {
-                InternalInitializeLogin();
+                InternalInitializeLogin().Wait();
             }
             else
             {
-                OnLoggedOut().Wait();
+                OnLoggedOut();
             }
         }
 
@@ -454,7 +453,7 @@ namespace SDroid
                 {
                     BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn),
                         "Failed to retrieve WebAccess session. Forcefully starting a new login process.");
-                    InternalInitializeLogin();
+                    InternalInitializeLogin().Wait();
                 }
 
                 return;
@@ -543,7 +542,7 @@ namespace SDroid
                 // ignore
             }
 
-            InternalInitializeLogin();
+            InternalInitializeLogin().Wait();
         }
 
         private void OnInternalSteamUserLoginKeyExchange(SteamUser.LoginKeyCallback loginKeyCallback)
@@ -652,7 +651,7 @@ namespace SDroid
         private void OnInternalWalletInfoAvailable(SteamUser.WalletInfoCallback walletInfoCallback)
         {
             BotLogger.Debug(nameof(OnInternalWalletInfoAvailable), "Account wallet information available.");
-            OnWalletInfoAvailable(walletInfoCallback).Wait();
+            OnWalletInfoAvailable(walletInfoCallback);
         }
 
         private async Task SteamKitPolling(object o)
