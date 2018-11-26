@@ -213,20 +213,20 @@ namespace SDroid.SteamWeb
             var url = new Uri(SteamAPIBaseUri,
                 string.Format("{0}/{1}/{2}/", interfaceName, functionName, functionVersion)).AbsoluteUri;
 
-            if (functionArguments != null)
-            {
-                if (interfaceName.EndsWith("Service"))
-                {
-                    functionArguments = new QueryStringBuilder
-                    {
-                        {
-                            "input_json",
-                            JsonConvert.SerializeObject(
-                                functionArguments.ToDictionary(pair => pair.Key, pair => pair.Value))
-                        }
-                    };
-                }
-            }
+            //if (functionArguments != null)
+            //{
+            //    if (interfaceName.EndsWith("Service"))
+            //    {
+            //        functionArguments = new QueryStringBuilder
+            //        {
+            //            {
+            //                "input_json",
+            //                JsonConvert.SerializeObject(
+            //                    functionArguments.ToDictionary(pair => pair.Key, pair => pair.Value))
+            //            }
+            //        };
+            //    }
+            //}
 
             var queryString = new QueryStringBuilder
             {
