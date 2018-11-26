@@ -187,12 +187,12 @@ namespace SDroid.SteamMobile
         ///     Refreshes the Steam session. Necessary to perform confirmations if your session has expired or changed.
         /// </summary>
         /// <returns>true if the operation completed successfully; otherwise false</returns>
-        public async Task<bool> RefreshSession()
+        public async Task<bool> RefreshSession(SteamMobileWebAccess mobileWebAccess)
         {
             try
             {
                 var serverResponse = await OperationRetryHelper.Default.RetryOperationAsync(
-                    () => SteamWebAPI.Default
+                    () => new SteamWebAPI(mobileWebAccess)
                         .RequestObject<SteamWebAPIResponse<GetWGTokenResponse>>(
                             "IMobileAuthService",
                             SteamWebAccessRequestMethod.Post,
