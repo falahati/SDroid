@@ -1,11 +1,12 @@
 ﻿using System.Threading.Tasks;
 using ConsoleUtilities;
 using SDroid;
+using SDroid.Interfaces;
 using SteamKit2;
 
 namespace SDroidTest
 {
-    internal class SteamKitBot : SDroid.SteamKitBot
+    internal class SteamKitBot : SDroid.SteamKitBot, ISteamKitChatBot
     {
         /// <inheritdoc />
         public SteamKitBot(SteamKitBotSettings settings, IBotLogger botLogger) : base(settings, botLogger)
@@ -15,6 +16,36 @@ namespace SDroidTest
         public new SteamKitBotSettings BotSettings
         {
             get => base.BotSettings as SteamKitBotSettings;
+        }
+
+        /// <inheritdoc />
+        public async Task OnChatGameInvited(SteamID partnerSteamId, string message)
+        {
+            await BotLogger
+                .Info(nameof(OnChatGameInvited), "Invited to game by {0}. Message = {1}", partnerSteamId, message)
+                .ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public async Task OnChatHistoricMessageReceived(SteamID partnerSteamId, string message)
+        {
+            await BotLogger.Info(nameof(OnChatHistoricMessageReceived), "Historic message from {0}. Message = {1}",
+                partnerSteamId, message).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public async Task OnChatMessageReceived(SteamID partnerSteamId, string message)
+        {
+            await BotLogger
+                .Info(nameof(OnChatMessageReceived), "New message from {0}. Message = {1}", partnerSteamId, message)
+                .ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public async Task OnChatPartnerEvent(SteamID partnerSteamId, SteamKitChatPartnerEvent chatEvent)
+        {
+            await BotLogger.Info(nameof(OnChatPartnerEvent), "Chat event by {0}. SteamKitChatPartnerEvent = {1}",
+                partnerSteamId, chatEvent).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -49,7 +80,7 @@ namespace SDroidTest
         /// <inheritdoc />
         protected override Task OnLoggedIn()
         {
-            BotLogger.Info("OnLoggedIn", "Changing state to Online.");
+            BotLogger.Info(nameof(OnLoggedIn), "Changing state to Online.");
             SteamFriends.SetPersonaState(EPersonaState.Online);
 
             return Task.CompletedTask;
