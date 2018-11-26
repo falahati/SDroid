@@ -60,6 +60,8 @@ namespace SDroid.SteamMobile
                 
                 SteamWebAccess = new SteamMobileWebAccess(new MobileSession(loginResponse.OAuthToken,
                     SteamWebAccess?.Session?.SessionId));
+
+                return true;
             }
 
             return false;
