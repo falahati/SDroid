@@ -313,6 +313,9 @@ namespace SDroid
                                 {
                                     backoff.Reset();
                                     loginCredentials.Password = password;
+                                    loginCredentials.EmailVerificationCode = null;
+                                    loginCredentials.CaptchaCode = null;
+                                    loginCredentials.TwoFactorAuthenticationCode = null;
                                 }
 
                                 break;
