@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using ConsoleUtilities;
 using SDroid;
 using SDroid.Interfaces;
@@ -49,6 +50,18 @@ namespace SDroidTest
         }
 
         /// <inheritdoc />
+        public override async Task StartBot()
+        {
+            await base.StartBot().ConfigureAwait(false);
+
+
+            while (BotStatus != SteamBotStatus.Running && BotStatus != SteamBotStatus.Faulted)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(200)).ConfigureAwait(false);
+            }
+        }
+
+        /// <inheritdoc />
         protected override Task OnAccountInfoAvailable(SteamUser.AccountInfoCallback accountInfo)
         {
             ConsoleWriter.Default.WriteObject(new
@@ -69,7 +82,6 @@ namespace SDroidTest
         {
             return Task.FromResult(ConsoleWriter.Default.PrintQuestion("Steam Guard Code"));
         }
-
 
         /// <inheritdoc />
         protected override Task OnConnected()

@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using ConsoleUtilities;
 using SDroid;
 using SDroid.Interfaces;
@@ -8,8 +9,6 @@ namespace SDroidTest
 {
     internal class TradeOfferBot : SteamBot, ITradeOfferBot
     {
-        private UserInventory _myInventory;
-
         /// <inheritdoc />
         public TradeOfferBot(TradeOfferBotSettings settings, Logger botLogger) : base(settings, botLogger)
         {
@@ -19,6 +18,8 @@ namespace SDroidTest
         {
             get => base.BotSettings as TradeOfferBotSettings;
         }
+
+        public UserInventory MyInventory { get; protected set; }
 
         /// <inheritdoc />
         public Task OnTradeOfferAccepted(TradeOffer tradeOffer)
@@ -75,15 +76,68 @@ namespace SDroidTest
         }
 
         /// <inheritdoc />
+        TradeOfferManager ITradeOfferBot.TradeOfferManager { get; set; }
+
+        /// <inheritdoc />
         public override async Task StartBot()
         {
             await base.StartBot().ConfigureAwait(false);
 
-            await BotLogin().ConfigureAwait(false);
+            if (BotStatus != SteamBotStatus.Running)
+            {
+                await BotLogin().ConfigureAwait(false);
+            }
         }
 
-        /// <inheritdoc />
-        TradeOfferManager ITradeOfferBot.TradeOfferManager { get; set; }
+        public async Task AcceptTradeOfferById(long tradeOfferId)
+        {
+            try
+            {
+                var tradeOfferManager = (this as ITradeOfferBot).TradeOfferManager;
+                var tradeOffer = await tradeOfferManager.GetTradeOffer(tradeOfferId).ConfigureAwait(false);
+
+                if (tradeOffer != null)
+                {
+                    await tradeOfferManager.Accept(tradeOffer).ConfigureAwait(false);
+                    await BotLogger.Info(nameof(AcceptTradeOfferById), "Requested to accept trade offer #{0}",
+                        tradeOffer.TradeOfferId).ConfigureAwait(false);
+                }
+                else
+                {
+                    await BotLogger.Info(nameof(AcceptTradeOfferById), "Trade offer #{0} not found.", tradeOfferId)
+                        .ConfigureAwait(false);
+                }
+            }
+            catch (Exception e)
+            {
+                await BotLogger.Error(nameof(AcceptTradeOfferById), e.Message).ConfigureAwait(false);
+            }
+        }
+
+        public async Task DeclineTradeOfferById(long tradeOfferId)
+        {
+            try
+            {
+                var tradeOfferManager = (this as ITradeOfferBot).TradeOfferManager;
+                var tradeOffer = await tradeOfferManager.GetTradeOffer(tradeOfferId).ConfigureAwait(false);
+
+                if (tradeOffer != null)
+                {
+                    await tradeOfferManager.Decline(tradeOffer).ConfigureAwait(false);
+                    await BotLogger.Info(nameof(DeclineTradeOfferById), "Requested to decline trade offer #{0}",
+                        tradeOffer.TradeOfferId).ConfigureAwait(false);
+                }
+                else
+                {
+                    await BotLogger.Info(nameof(DeclineTradeOfferById), "Trade offer #{0} not found.", tradeOfferId)
+                        .ConfigureAwait(false);
+                }
+            }
+            catch (Exception e)
+            {
+                await BotLogger.Error(nameof(DeclineTradeOfferById), e.Message).ConfigureAwait(false);
+            }
+        }
 
         /// <inheritdoc />
         protected override Task<string> OnAuthenticatorCodeRequired()
@@ -96,17 +150,17 @@ namespace SDroidTest
         {
             await BotLogger.Info(nameof(OnLoggedIn), "Retrieving bot's inventory.").ConfigureAwait(false);
 
-            if (_myInventory == null)
+            if (MyInventory == null)
             {
-                _myInventory = await UserInventory.GetInventory(WebAccess, SteamId).ConfigureAwait(false);
+                MyInventory = await UserInventory.GetInventory(WebAccess, SteamId).ConfigureAwait(false);
             }
 
-            _myInventory.ClearCache();
+            MyInventory.ClearCache();
 
-            var assets = await _myInventory.GetAssets().ConfigureAwait(false);
+            //var assets = await MyInventory.GetAssets().ConfigureAwait(false);
 
-            await BotLogger.Info(nameof(OnLoggedIn), "{0} assets found in bot's inventory.", assets.Length)
-                .ConfigureAwait(false);
+            //await BotLogger.Info(nameof(OnLoggedIn), "{0} assets found in bot's inventory.", assets.Length)
+            //    .ConfigureAwait(false);
 
             await base.OnLoggedIn().ConfigureAwait(false);
         }

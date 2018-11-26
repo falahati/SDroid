@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using ConsoleUtilities;
 using SDroid;
@@ -77,7 +78,76 @@ namespace SDroidTest
         {
             await base.StartBot().ConfigureAwait(false);
 
-            await BotLogin().ConfigureAwait(false);
+            if (BotStatus != SteamBotStatus.Running)
+            {
+                await BotLogin().ConfigureAwait(false);
+            }
+        }
+
+        public async Task ConfirmByTradeOfferId(long tradeOfferId)
+        {
+            try
+            {
+                var authenticator = (this as IAuthenticatorBot).BotAuthenticatorSettings?.Authenticator;
+
+                if (authenticator != null)
+                {
+                    var confirmations = await authenticator.FetchConfirmations().ConfigureAwait(false);
+
+                    var confirmation = confirmations?.FirstOrDefault(c =>
+                        c.Type == ConfirmationType.Trade && c.Creator == (ulong) tradeOfferId);
+
+                    if (confirmation != null)
+                    {
+                        await authenticator.AcceptConfirmation(confirmation).ConfigureAwait(false);
+                        await BotLogger.Info(nameof(ConfirmByTradeOfferId), "Requested to confirm trade offer #{0}",
+                            tradeOfferId).ConfigureAwait(false);
+
+                        return;
+                    }
+                }
+
+                await BotLogger.Info(nameof(ConfirmByTradeOfferId), "Confirmation for trade offer #{0} not found.",
+                        tradeOfferId)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                await BotLogger.Error(nameof(ConfirmByTradeOfferId), e.Message).ConfigureAwait(false);
+            }
+        }
+
+        public async Task DenyByTradeOfferId(long tradeOfferId)
+        {
+            try
+            {
+                var authenticator = (this as IAuthenticatorBot).BotAuthenticatorSettings?.Authenticator;
+
+                if (authenticator != null)
+                {
+                    var confirmations = await authenticator.FetchConfirmations().ConfigureAwait(false);
+
+                    var confirmation = confirmations?.FirstOrDefault(c =>
+                        c.Type == ConfirmationType.Trade && c.Creator == (ulong) tradeOfferId);
+
+                    if (confirmation != null)
+                    {
+                        await authenticator.DenyConfirmation(confirmation).ConfigureAwait(false);
+                        await BotLogger.Info(nameof(DenyByTradeOfferId), "Requested to deny trade offer #{0}",
+                            tradeOfferId).ConfigureAwait(false);
+
+                        return;
+                    }
+                }
+
+                await BotLogger.Info(nameof(DenyByTradeOfferId), "Confirmation for trade offer #{0} not found.",
+                        tradeOfferId)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                await BotLogger.Error(nameof(DenyByTradeOfferId), e.Message).ConfigureAwait(false);
+            }
         }
 
         /// <inheritdoc />

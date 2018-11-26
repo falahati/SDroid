@@ -7,10 +7,10 @@ namespace SDroidTest
     internal class AuthenticatorBotSettings : IBotSettings, IAuthenticatorSettings
     {
         /// <inheritdoc />
-        public void SaveSettings()
-        {
-            this.Save();
-        }
+        public Authenticator Authenticator { get; set; }
+
+        /// <inheritdoc />
+        public int ConfirmationCheckInterval { get; set; } = 60;
 
         /// <inheritdoc />
         public string ApiKey { get; set; }
@@ -34,9 +34,9 @@ namespace SDroidTest
         public string Username { get; set; }
 
         /// <inheritdoc />
-        public Authenticator Authenticator { get; set; }
-
-        /// <inheritdoc />
-        public int ConfirmationCheckInterval { get; set; } = 60;
+        public void SaveSettings()
+        {
+            this.Save();
+        }
     }
 }
