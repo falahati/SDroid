@@ -178,7 +178,7 @@ namespace SDroid.SteamMobile
         /// </returns>
         public override bool HasEnoughInfo()
         {
-            return !base.HasEnoughInfo() &&
+            return base.HasEnoughInfo() &&
                    !string.IsNullOrWhiteSpace(OAuthToken) &&
                    SteamCommunityId > 0;
         }
