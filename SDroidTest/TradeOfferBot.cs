@@ -91,6 +91,14 @@ namespace SDroidTest
         }
 
         /// <inheritdoc />
+        public override async Task StartBot()
+        {
+            await base.StartBot().ConfigureAwait(false);
+
+            await BotLogin().ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
         TradeOfferManager ITradeOfferBot.TradeOfferManager { get; set; }
 
         /// <inheritdoc />

@@ -80,14 +80,12 @@ namespace SDroid
                     return;
                 }
 
-                BotStatus = SteamBotStatus.Running;
+                BotStatus = SteamBotStatus.Connected;
             }
 
             await BotLogger.Debug(nameof(StartBot), "Starting bot.").ConfigureAwait(false);
 
             CancellationTokenSource = new CancellationTokenSource();
-
-            var _ = BotLogin();
         }
 
         public virtual async Task StopBot()
