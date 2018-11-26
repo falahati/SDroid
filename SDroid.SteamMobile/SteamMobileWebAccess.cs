@@ -23,6 +23,9 @@ namespace SDroid.SteamMobile
         public SteamMobileWebAccess(MobileSession session, IWebProxy proxy) : base(session, proxy)
         {
         }
+        public SteamMobileWebAccess(MobileSession session, IPAddress ipAddress, IWebProxy proxy) : base(session, ipAddress, proxy)
+        {
+        }
 
         public new static SteamMobileWebAccess GetGuest()
         {
