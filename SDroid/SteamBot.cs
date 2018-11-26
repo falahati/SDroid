@@ -90,6 +90,14 @@ namespace SDroid
 
         public virtual async Task StopBot()
         {
+            lock (this)
+            {
+                if (BotStatus == SteamBotStatus.Ready)
+                {
+                    return;
+                }
+            }
+
             await BotLogger.Debug(nameof(StopBot), "Stopping bot.").ConfigureAwait(false);
             CancellationTokenSource?.Cancel(true);
             SessionCheckTimer?.Dispose();
