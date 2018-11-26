@@ -217,6 +217,20 @@ namespace SDroid
 
                     if (authenticatorController.BotAuthenticatorSettings?.Authenticator?.Session != null)
                     {
+                        var webAccess = new SteamMobileWebAccess(
+                            authenticatorController.BotAuthenticatorSettings.Authenticator.Session,
+                            IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress) ? ipAddress : IPAddress.Any,
+                            string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy));
+
+                        if (await webAccess.VerifySession().ConfigureAwait(false))
+                        {
+                            await BotLogger.Debug(nameof(BotLogin), "Session is valid.").ConfigureAwait(false);
+                            WebAccess = webAccess;
+                            await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
+
+                            return;
+                        }
+
                         await BotLogger.Debug(nameof(BotLogin), "Refreshing authenticator session.")
                             .ConfigureAwait(false);
 
