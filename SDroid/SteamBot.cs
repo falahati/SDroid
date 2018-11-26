@@ -562,7 +562,20 @@ namespace SDroid
                 {
                     await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Updating IAuthenticatorBot's session.")
                         .ConfigureAwait(false);
-                    authenticatorController.BotAuthenticatorSettings?.Authenticator?.Session?.UpdateSession(session);
+
+                    if (session is MobileSession mobileSession && authenticatorController.BotAuthenticatorSettings?.Authenticator != null)
+                    {
+                        authenticatorController.BotAuthenticatorSettings.Authenticator = new Authenticator(
+                            authenticatorController.BotAuthenticatorSettings.Authenticator.AuthenticatorData,
+                            mobileSession, authenticatorController.BotAuthenticatorSettings.Authenticator.DeviceId
+                        );
+                    }
+                    else
+                    {
+                        authenticatorController.BotAuthenticatorSettings?.Authenticator?.Session
+                            ?.UpdateSession(session);
+                    }
+
                     authenticatorController.BotAuthenticatorSettings?.SaveSettings();
                 }
 
