@@ -30,7 +30,7 @@ namespace SDroid.SteamMobile
         /// <param name="steamLoginSecure">The steam user login secure.</param>
         /// <param name="sessionId">The session identifier string.</param>
         /// <param name="rememberLoginToken">The session remember login token</param>
-        /// <param name="steamMachineAuthenticationToken">The session steam guard machine authentication tokens</param>
+        /// <param name="steamMachineAuthenticationTokens">The session steam guard machine authentication tokens</param>
         [JsonConstructor]
         // ReSharper disable once TooManyDependencies
         public MobileSession(
@@ -40,9 +40,9 @@ namespace SDroid.SteamMobile
             string steamLoginSecure,
             string sessionId,
             string rememberLoginToken,
-            Dictionary<ulong, string> steamMachineAuthenticationToken) :
+            Dictionary<ulong, string> steamMachineAuthenticationTokens) :
             base(steamId, steamLogin, steamLoginSecure, sessionId,
-                rememberLoginToken, steamMachineAuthenticationToken)
+                rememberLoginToken, steamMachineAuthenticationTokens)
         {
             WebCookies.Add(new Cookie("mobileClientVersion", ClientVersion, "/",
                 CommunityCookieDomain));
@@ -135,7 +135,7 @@ namespace SDroid.SteamMobile
                 SteamLoginSecure,
                 SessionId,
                 RememberLoginToken,
-                SteamMachineAuthenticationToken
+                SteamMachineAuthenticationTokens
             );
         }
 
