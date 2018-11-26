@@ -5,6 +5,7 @@
         Faulted,
         Ready,
         Connecting,
+        Connected,
         LoggingIn,
         Running
     }

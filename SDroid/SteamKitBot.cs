@@ -103,7 +103,7 @@ namespace SDroid
                     return;
                 }
 
-                BotStatus = SteamBotStatus.Running;
+                BotStatus = SteamBotStatus.Connecting;
             }
 
             await BotLogger.Debug(nameof(StartBot), "Starting bot.").ConfigureAwait(false);
@@ -112,7 +112,6 @@ namespace SDroid
 
             var _ = Task.Factory.StartNew(SteamKitPolling, CancellationTokenSource.Token,
                 TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously);
-
 
             await BotLogger.Debug(nameof(StartBot), "Connecting to steam network.").ConfigureAwait(false);
             SteamClient.Connect();
@@ -320,6 +319,12 @@ namespace SDroid
         {
             BotLogger.Debug(nameof(OnInternalSteamClientConnected), "Connected to the steam network.");
             ConnectionBackoff.Reset();
+
+            lock (this)
+            {
+                BotStatus = SteamBotStatus.Connected;
+            }
+
             OnConnected().Wait();
         }
 
