@@ -15,18 +15,23 @@ namespace SDroid.SteamWeb
         private static readonly Uri SteamAPIBaseUri = new Uri(SteamAPIBaseUrl);
         private string _apiKey;
 
-        public SteamWebAPI() : this(null)
+        public SteamWebAPI() : this(null, null)
         {
         }
 
-        public SteamWebAPI(string apiKey) : this(apiKey, SteamWebAccess.GetGuest())
+        public SteamWebAPI(string apiKey) : this(apiKey, null)
         {
         }
 
         public SteamWebAPI(string apiKey, SteamWebAccess steamWebAccess)
         {
             _apiKey = apiKey;
-            SteamWebAccess = steamWebAccess;
+            SteamWebAccess = steamWebAccess ?? SteamWebAccess.GetGuest();
+        }
+
+        public SteamWebAPI(SteamWebAccess steamWebAccess) : this(null, steamWebAccess)
+        {
+
         }
 
 
