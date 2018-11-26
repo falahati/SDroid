@@ -6,7 +6,7 @@ using SDroid.SteamTrade;
 
 namespace SDroidTest
 {
-    public class TradeOfferBot : SteamBot, ITradeOfferBot
+    internal class TradeOfferBot : SteamBot, ITradeOfferBot
     {
         private UserInventory _myInventory;
 

@@ -1,10 +1,17 @@
 ﻿using SDroid.Interfaces;
+using SDroid.SteamMobile;
 using SDroid.SteamWeb;
 
 namespace SDroidTest
 {
-    internal class SteamKitBotSettings : ISteamKitBotSettings
+    internal class AuthenticatorBotSettings : IBotSettings, IAuthenticatorSettings
     {
+        /// <inheritdoc />
+        public void SaveSettings()
+        {
+            this.Save();
+        }
+
         /// <inheritdoc />
         public string ApiKey { get; set; }
 
@@ -27,24 +34,9 @@ namespace SDroidTest
         public string Username { get; set; }
 
         /// <inheritdoc />
-        public void SaveSettings()
-        {
-            this.Save();
-        }
+        public Authenticator Authenticator { get; set; }
 
         /// <inheritdoc />
-        public string LoginKey { get; set; }
-
-        /// <inheritdoc />
-        public int LoginTimeout { get; set; } = 300;
-
-        /// <inheritdoc />
-        public byte[] SentryFile { get; set; }
-
-        /// <inheritdoc />
-        public byte[] SentryFileHash { get; set; }
-
-        /// <inheritdoc />
-        public string SentryFileName { get; set; }
+        public int ConfirmationCheckInterval { get; set; } = 60;
     }
 }
