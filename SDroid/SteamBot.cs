@@ -157,7 +157,7 @@ namespace SDroid
                 BotStatus = SteamBotStatus.LoggingIn;
             }
 
-            await BotLogger.Debug(nameof(BotLogin), "Logging in.").ConfigureAwait(false);
+            await BotLogger.Debug(nameof(BotLogin), "Starting login process.").ConfigureAwait(false);
 
             try
             {
@@ -425,7 +425,7 @@ namespace SDroid
                 }
                 catch (Exception e)
                 {
-                    await BotLogger.Error(nameof(OnAuthenticatorCheckConfirmations), e.Message).ConfigureAwait(false);
+                    await BotLogger.Warning(nameof(OnAuthenticatorCheckConfirmations), e.Message).ConfigureAwait(false);
                 }
             }
         }
@@ -475,7 +475,9 @@ namespace SDroid
 
                 if (!await WebAccess.VerifySession().ConfigureAwait(false))
                 {
-                    await BotLogger.Warning(nameof(OnCheckSession), "Session expired.").ConfigureAwait(false);
+                    await BotLogger
+                        .Warning(nameof(OnCheckSession), "Session expired. Forcefully starting a new login process.")
+                        .ConfigureAwait(false);
 
                     await BotLogin().ConfigureAwait(false);
                 }
@@ -508,6 +510,7 @@ namespace SDroid
             return Task.CompletedTask;
         }
 
+        // ReSharper disable once FunctionComplexityOverflow
         protected virtual async Task OnNewWebSessionAvailable(WebSession session)
         {
             try
@@ -515,7 +518,9 @@ namespace SDroid
                 await WebSessionLock.WaitAsync().ConfigureAwait(false);
 
                 await BotLogger.Debug(nameof(OnNewWebSessionAvailable),
-                    "WebSession: " + (session?.HasEnoughInfo().ToString() ?? "NULL")).ConfigureAwait(false);
+                        "Session changing. WebSession.HasEnoughInfo() = `{0}`",
+                        session?.HasEnoughInfo().ToString() ?? "NULL")
+                    .ConfigureAwait(false);
 
                 session = session ?? new WebSession();
 
@@ -527,7 +532,7 @@ namespace SDroid
                 // ReSharper disable once SuspiciousTypeConversion.Global
                 if (this is IAuthenticatorBot authenticatorController)
                 {
-                    await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Updating IAuthenticatorBot session.")
+                    await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Updating IAuthenticatorBot's session.")
                         .ConfigureAwait(false);
                     authenticatorController.BotAuthenticatorSettings?.Authenticator?.Session?.UpdateSession(session);
                     authenticatorController.BotAuthenticatorSettings?.SaveSettings();
@@ -536,7 +541,7 @@ namespace SDroid
                 // Create a SteamWebAccess if missing or update the current SteamWebAccess
                 if (WebAccess == null)
                 {
-                    await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Creating WebAccess.")
+                    await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Initializing an instance of WebAccess.")
                         .ConfigureAwait(false);
                     WebAccess = new SteamWebAccess(
                         session,
@@ -546,7 +551,7 @@ namespace SDroid
                 }
                 else
                 {
-                    await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Updating WebAccess session.")
+                    await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Updating WebAccess's session.")
                         .ConfigureAwait(false);
                     WebAccess.Session = session;
                 }
@@ -563,7 +568,8 @@ namespace SDroid
 
                         try
                         {
-                            await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Requesting API key.")
+                            await BotLogger.Debug(nameof(OnNewWebSessionAvailable),
+                                    "API key is missing, retriving directly from Steam.")
                                 .ConfigureAwait(false);
                             await backoff.Delay().ConfigureAwait(false);
                             apiKey = await SteamWebAPI.GetApiKey(WebAccess)
@@ -571,6 +577,9 @@ namespace SDroid
 
                             if (string.IsNullOrWhiteSpace(apiKey))
                             {
+                                await BotLogger.Debug(nameof(OnNewWebSessionAvailable),
+                                    "Account not registered for an API key.").ConfigureAwait(false);
+
                                 var domainName =
                                     !string.IsNullOrWhiteSpace(BotSettings.DomainName)
                                         ? BotSettings.DomainName
@@ -579,13 +588,22 @@ namespace SDroid
                                            "example.com");
 
                                 await BotLogger.Debug(nameof(OnNewWebSessionAvailable),
-                                    "Registering for API key for domain: " + domainName).ConfigureAwait(false);
+                                        "Registering for a new API key. DomainName = `{0}`", domainName)
+                                    .ConfigureAwait(false);
 
-                                while (!await SteamWebAPI
+                                if (await SteamWebAPI
                                     .RegisterApiKey(WebAccess, domainName)
                                     .ConfigureAwait(false))
                                 {
-                                    await Task.Delay(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+                                    await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "API key registered.")
+                                        .ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    await BotLogger.Debug(nameof(OnNewWebSessionAvailable),
+                                        "Failed to register API key. Another try in 30 seconds.").ConfigureAwait(false);
+                                    await Task.Delay(TimeSpan.FromSeconds(30), CancellationTokenSource.Token)
+                                        .ConfigureAwait(false);
                                 }
                             }
                         }
@@ -599,17 +617,19 @@ namespace SDroid
                     // If API key acquired, save to bot's settings
                     if (!string.IsNullOrWhiteSpace(apiKey))
                     {
+                        await BotLogger.Debug(nameof(OnNewWebSessionAvailable),
+                            "Saving API key to bot's settings.").ConfigureAwait(false);
                         BotSettings.ApiKey = apiKey;
                         BotSettings.SaveSettings();
                     }
                 }
 
-                // If API key is not available, create or update the SteamWebAPI
+                // If API key is available, create or update the SteamWebAPI
                 if (!string.IsNullOrWhiteSpace(BotSettings.ApiKey))
                 {
                     if (WebAPI == null)
                     {
-                        await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Creating WebAPI.")
+                        await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Initializing an instance of WebAPI.")
                             .ConfigureAwait(false);
                         WebAPI = new SteamWebAPI(
                             BotSettings.ApiKey,
@@ -630,7 +650,7 @@ namespace SDroid
                     if (offerController.TradeOfferManager == null)
                     {
                         await BotLogger.Debug(nameof(OnNewWebSessionAvailable),
-                            "Initializing ITradeOfferBot's TradeOfferManager.").ConfigureAwait(false);
+                            "Initializing an instance of TradeOfferManager for ITradeOfferBot.").ConfigureAwait(false);
                         offerController.TradeOfferManager = new TradeOfferManager(
                             WebAPI,
                             WebAccess,
@@ -656,7 +676,8 @@ namespace SDroid
                     if (tradeController.TradeManager == null)
                     {
                         await BotLogger
-                            .Debug(nameof(OnNewWebSessionAvailable), "Initializing ITradeBot's TradeManager.")
+                            .Debug(nameof(OnNewWebSessionAvailable),
+                                "Initializing an instance of TradeManager for ITradeBot.")
                             .ConfigureAwait(false);
                         tradeController.TradeManager = new TradeManager(
                             WebAPI,
@@ -667,8 +688,7 @@ namespace SDroid
                     }
                 }
 
-
-                await BotLogger.Success(nameof(OnNewWebSessionAvailable), "Session update completed.")
+                await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Session updated successfully.")
                     .ConfigureAwait(false);
 
                 lock (this)
@@ -727,7 +747,7 @@ namespace SDroid
                     BotStatus = SteamBotStatus.Running;
                 }
 
-                await BotLogger.Success(nameof(OnNewWebSessionAvailable), "Successfully logged in.")
+                await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Logged in successfully.")
                     .ConfigureAwait(false);
                 await OnLoggedIn().ConfigureAwait(false);
             }
@@ -743,11 +763,15 @@ namespace SDroid
             }
         }
 
-        protected abstract Task<string> OnPasswordRequired();
+        protected virtual Task<string> OnPasswordRequired()
+        {
+            throw new NotImplementedException();
+        }
 
         protected virtual async Task OnTerminate()
         {
-            await BotLogger.Error(nameof(OnTerminate), "Terminating due to a fault.").ConfigureAwait(false);
+            await BotLogger.Error(nameof(OnTerminate), "Terminating due to a fault. See previous logs.")
+                .ConfigureAwait(false);
 
             lock (this)
             {
@@ -761,6 +785,10 @@ namespace SDroid
             object sender,
             TradeOfferStateChangedEventArgs tradeOfferStateChangedEventArgs)
         {
+            await BotLogger.Debug(nameof(OnInternalOfferDeclined),
+                    "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
+                    tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
+                .ConfigureAwait(false);
             // ReSharper disable once PossibleNullReferenceException
             // ReSharper disable once SuspiciousTypeConversion.Global
             await ((this as ITradeOfferBot)?.OnTradeOfferDeclined(tradeOfferStateChangedEventArgs.TradeOffer))
@@ -771,6 +799,10 @@ namespace SDroid
             object sender,
             TradeOfferStateChangedEventArgs tradeOfferStateChangedEventArgs)
         {
+            await BotLogger.Debug(nameof(OnInternalOfferInEscrow),
+                    "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
+                    tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
+                .ConfigureAwait(false);
             // ReSharper disable once PossibleNullReferenceException
             // ReSharper disable once SuspiciousTypeConversion.Global
             await ((this as ITradeOfferBot)?.OnTradeOfferInEscrow(tradeOfferStateChangedEventArgs.TradeOffer))
@@ -779,6 +811,10 @@ namespace SDroid
 
         private async void OnInternalTradeCreated(object sender, TradeCreatedEventArgs tradeCreatedEventArgs)
         {
+            await BotLogger.Debug(nameof(OnInternalTradeCreated),
+                    "TradeCreatedEventArgs.PartnerSteamId = `{0}`",
+                    tradeCreatedEventArgs.PartnerSteamId)
+                .ConfigureAwait(false);
             // ReSharper disable once PossibleNullReferenceException
             // ReSharper disable once SuspiciousTypeConversion.Global
             await ((this as ITradeBot)?.OnTradeCreated(tradeCreatedEventArgs.PartnerSteamId,
@@ -789,6 +825,10 @@ namespace SDroid
             object sender,
             TradeOfferStateChangedEventArgs tradeOfferStateChangedEventArgs)
         {
+            await BotLogger.Debug(nameof(OnInternalTradeOfferAccepted),
+                    "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
+                    tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
+                .ConfigureAwait(false);
             // ReSharper disable once PossibleNullReferenceException
             // ReSharper disable once SuspiciousTypeConversion.Global
             await ((this as ITradeOfferBot)?.OnTradeOfferAccepted(tradeOfferStateChangedEventArgs.TradeOffer))
@@ -799,6 +839,10 @@ namespace SDroid
             object sender,
             TradeOfferStateChangedEventArgs tradeOfferStateChangedEventArgs)
         {
+            await BotLogger.Debug(nameof(OnInternalTradeOfferCanceled),
+                    "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
+                    tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
+                .ConfigureAwait(false);
             // ReSharper disable once PossibleNullReferenceException
             // ReSharper disable once SuspiciousTypeConversion.Global
             await ((this as ITradeOfferBot)?.OnTradeOfferCanceled(tradeOfferStateChangedEventArgs.TradeOffer))
@@ -809,6 +853,10 @@ namespace SDroid
             object sender,
             TradeOfferStateChangedEventArgs tradeOfferStateChangedEventArgs)
         {
+            await BotLogger.Debug(nameof(OnInternalTradeOfferChanged),
+                    "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
+                    tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
+                .ConfigureAwait(false);
             // ReSharper disable once PossibleNullReferenceException
             // ReSharper disable once SuspiciousTypeConversion.Global
             await ((this as ITradeOfferBot)?.OnTradeOfferChanged(tradeOfferStateChangedEventArgs.TradeOffer))
@@ -819,6 +867,10 @@ namespace SDroid
             object sender,
             TradeOfferStateChangedEventArgs tradeOfferStateChangedEventArgs)
         {
+            await BotLogger.Debug(nameof(OnInternalTradeOfferNeedsConfirmation),
+                    "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
+                    tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
+                .ConfigureAwait(false);
             // ReSharper disable once PossibleNullReferenceException
             // ReSharper disable once SuspiciousTypeConversion.Global
             await ((this as ITradeOfferBot)?.OnTradeOfferNeedsConfirmation(tradeOfferStateChangedEventArgs
@@ -829,6 +881,10 @@ namespace SDroid
             object sender,
             TradeOfferStateChangedEventArgs tradeOfferStateChangedEventArgs)
         {
+            await BotLogger.Debug(nameof(OnInternalTradeOfferReceived),
+                    "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
+                    tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
+                .ConfigureAwait(false);
             // ReSharper disable once PossibleNullReferenceException
             // ReSharper disable once SuspiciousTypeConversion.Global
             await ((this as ITradeOfferBot)?.OnTradeOfferReceived(tradeOfferStateChangedEventArgs.TradeOffer))
@@ -839,6 +895,10 @@ namespace SDroid
             object sender,
             TradeOfferStateChangedEventArgs tradeOfferStateChangedEventArgs)
         {
+            await BotLogger.Debug(nameof(OnInternalTradeOfferSent),
+                    "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
+                    tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
+                .ConfigureAwait(false);
             // ReSharper disable once PossibleNullReferenceException
             // ReSharper disable once SuspiciousTypeConversion.Global
             await ((this as ITradeOfferBot)?.OnTradeOfferSent(tradeOfferStateChangedEventArgs.TradeOffer))

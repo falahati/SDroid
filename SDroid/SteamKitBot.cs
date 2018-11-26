@@ -118,11 +118,13 @@ namespace SDroid
         }
 
         /// <inheritdoc />
-        public override Task StopBot()
+        public override async Task StopBot()
         {
+            await BotLogger.Debug(nameof(StopBot), "Disconnecting from Steam network.").ConfigureAwait(false);
+
             SteamClient?.Disconnect();
 
-            return base.StopBot();
+            await base.StopBot().ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -220,7 +222,7 @@ namespace SDroid
                     TimeSpan.FromSeconds(BotSettings.LoginTimeout), TimeSpan.FromMilliseconds(-1));
             }
 
-            BotLogger.Debug(nameof(InternalInitializeLogin), "Logging in.");
+            BotLogger.Debug(nameof(InternalInitializeLogin), "Starting login process.");
             LoginDetails = LoginDetails ??
                            new SteamUser.LogOnDetails
                            {
@@ -233,12 +235,12 @@ namespace SDroid
 
             if (string.IsNullOrWhiteSpace(LoginDetails.Password) && string.IsNullOrWhiteSpace(LoginDetails.LoginKey))
             {
-                BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Requesting account password.");
+                BotLogger.Debug(nameof(InternalInitializeLogin), "Requesting account password.");
                 var password = OnPasswordRequired().Result;
 
                 if (string.IsNullOrWhiteSpace(password))
                 {
-                    BotLogger.Error(nameof(OnInternalSteamUserLoggedOn), "Bad password provided.");
+                    BotLogger.Error(nameof(InternalInitializeLogin), "Bad password provided.");
                     OnTerminate().Wait();
 
                     return;
@@ -252,6 +254,7 @@ namespace SDroid
 
         private void OnInternalAccountInfoAvailable(SteamUser.AccountInfoCallback accountInfoCallback)
         {
+            BotLogger.Debug(nameof(OnInternalAccountInfoAvailable), "Account info available.");
             OnAccountInfoAvailable(accountInfoCallback).Wait();
         }
 
@@ -261,7 +264,8 @@ namespace SDroid
             if (this is ISteamKitChatBot chatBot)
             {
                 BotLogger.Debug(nameof(OnInternalFriendSteamFriendsMessageReceived),
-                    "Received a new chat event: " + friendMsgCallback.EntryType);
+                    "Received a new chat event. SteamFriends.FriendMsgCallback.EntryType = `{0}`",
+                    friendMsgCallback.EntryType);
 
                 switch (friendMsgCallback.EntryType)
                 {
@@ -330,7 +334,9 @@ namespace SDroid
 
         private void OnInternalSteamClientDisconnect(SteamClient.DisconnectedCallback disconnectedCallback)
         {
-            BotLogger.Debug(nameof(OnInternalSteamClientDisconnect), "Disconnected from the steam network.");
+            BotLogger.Debug(nameof(OnInternalSteamClientDisconnect),
+                "Disconnected from the steam network. SteamClient.DisconnectedCallback.UserInitiated = `{0}`",
+                disconnectedCallback.UserInitiated);
 
             if (!disconnectedCallback.UserInitiated)
             {
@@ -436,20 +442,22 @@ namespace SDroid
                     }
                     else
                     {
-                        BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Bad session retrieved.");
+                        BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn),
+                            "Bad session retrieved. Requesting a new WebAPI user nonce.");
                         SteamUser.RequestWebAPIUserNonce();
                     }
                 }
                 else
                 {
-                    BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Failed to retrieve WebAccess session.");
+                    BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn),
+                        "Failed to retrieve WebAccess session. Forcefully starting a new login process.");
                     InternalInitializeLogin();
                 }
 
                 return;
             }
 
-
+            BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn), "Clearing saved LoginKey and SentryFile data.");
             LoginDetails.LoginKey = null;
             LoginDetails.SentryFileHash = null;
 
@@ -544,7 +552,7 @@ namespace SDroid
 
                 SteamUser.AcceptNewLoginKey(loginKeyCallback);
 
-                BotLogger.Debug(nameof(OnInternalSteamUserUpdateMachineAuthenticationCallback),
+                BotLogger.Debug(nameof(OnInternalSteamUserLoginKeyExchange),
                     "Login key exchange completed.");
             }
         }
@@ -553,7 +561,8 @@ namespace SDroid
         {
             if (webAPIUserNonceCallback.Result == EResult.OK)
             {
-                BotLogger.Debug(nameof(OnInternalSteamUserNewWebApiUserNonce), "Refreshing session.");
+                BotLogger.Debug(nameof(OnInternalSteamUserNewWebApiUserNonce),
+                    "New WebAPI web nonce received. Retriving WebAPI and WebAccess session.");
                 var session = SteamClient.AuthenticateWebSession(webAPIUserNonceCallback.Nonce).Result;
 
                 if (session != null && session.HasEnoughInfo())
@@ -572,8 +581,15 @@ namespace SDroid
                     }
                     else
                     {
+                        BotLogger.Debug(nameof(OnInternalSteamUserNewWebApiUserNonce),
+                            "Session is invalid. Requesting a new WebAPI user nonce.");
                         SteamUser.RequestWebAPIUserNonce();
                     }
+                }
+                else
+                {
+                    BotLogger.Debug(nameof(OnInternalSteamUserNewWebApiUserNonce),
+                        "Failed to retrieve WebAccess session.");
                 }
             }
         }
@@ -582,7 +598,8 @@ namespace SDroid
             SteamUser.UpdateMachineAuthCallback machineAuthCallback)
         {
             BotLogger.Debug(nameof(OnInternalSteamUserUpdateMachineAuthenticationCallback),
-                "Machine authentication sentry file update request received.");
+                "Machine authentication SentryFile update request received. SteamUser.UpdateMachineAuthCallback.FileName = `{0}`",
+                machineAuthCallback.FileName);
 
             var sentryFile = new byte[0];
 
@@ -619,16 +636,19 @@ namespace SDroid
                 JobID = machineAuthCallback.JobID
             };
 
+            SteamUser.SendMachineAuthResponse(authResponse);
+
             BotSettings.SentryFileName = machineAuthCallback.FileName;
             BotSettings.SentryFileHash = sentryFileHash;
             BotSettings.SentryFile = sentryFile;
             BotSettings.SaveSettings();
 
-            SteamUser.SendMachineAuthResponse(authResponse);
+            BotLogger.Debug(nameof(OnInternalSteamUserUpdateMachineAuthenticationCallback), "SentryFile updated.");
         }
 
         private void OnInternalWalletInfoAvailable(SteamUser.WalletInfoCallback walletInfoCallback)
         {
+            BotLogger.Debug(nameof(OnInternalWalletInfoAvailable), "Account wallet information available.");
             OnWalletInfoAvailable(walletInfoCallback).Wait();
         }
 
