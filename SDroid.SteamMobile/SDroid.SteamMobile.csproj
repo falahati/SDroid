@@ -29,6 +29,12 @@
     <OutputPath>..\Release</OutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Samples.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Samples.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference PrivateAssets="all" Include="MSBump" Version="2.3.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
