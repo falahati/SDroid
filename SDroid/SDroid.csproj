@@ -5,7 +5,7 @@
     <Version>1.0.0.4</Version>
     <Company>Soroush Falahati (falahati.net)</Company>
     <Description>
-      SDroid is a framework for designing and running custom bots for Steam network capable of trading and managing the Steam Account they are connected to. (Based on geel9/SteamAuth and Jessecar96/SteamBot projects)
+      SDroid is a framework for designing and running custom bots for Steam network capable of trading and managing the Steam Account they are connected to.
     </Description>
     <Authors>Soroush Falahati</Authors>
     <Copyright>Copyright © Soroush Falahati 2018</Copyright>
