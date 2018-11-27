@@ -7,7 +7,7 @@ Followings are the classes available on this library along with their primary re
 #### SteamMobileWebAccess
 
 `SteamMobileWebAccess` a child type of `SteamWebAccess` which provides you with access to Steam's website functionality
-mimicking the behaviour of a mobile phone browser. This behaviour also allows accessing mobile-specific pages. Read more about `SteamWebAccess` click [here](/falahati/SDroid/blob/master/SDroid.SteamWeb/README.md#steamwebaccess).
+mimicking the behaviour of a mobile phone browser. This behaviour also allows accessing mobile-specific pages. Read more about `SteamWebAccess` click [here](/SDroid.SteamWeb/README.md#steamwebaccess).
 
 #### MobileSession
 
@@ -15,7 +15,7 @@ mimicking the behaviour of a mobile phone browser. This behaviour also allows ac
 information regarding a logged in session. A `MobileSession` can be retrieved with a successful login or by deserializing from
 an older logged in session via `MobileLogin` type. An expired `MobileSession` can also be extended using the
 OAuth token provided as part of the session and therefore does not requires a reauthentication process unless the OAuth token
-itself becomes expired. Read more about `WebSession` click [here](/falahati/SDroid/blob/master/SDroid.SteamWeb/README.md#websession).
+itself becomes expired. Read more about `WebSession` click [here](/SDroid.SteamWeb/README.md#websession).
 
 #### MobileLogin
 
@@ -23,8 +23,8 @@ itself becomes expired. Read more about `WebSession` click [here](/falahati/SDro
 for creating an instance of `SteamMobileWebAccess` or serialized to disk for later usage. Since `MobileLogin` is a child type of
 `WebLogin`, it can be used as an in-place replacement of that type and there the login process
 is similar to identical to `WebLogin`. For more information about the `WebLogin` type 
-click [here](/falahati/SDroid/blob/master/SDroid.SteamWeb/README.md#weblogin) and for a sample of login process
-click [here](/falahati/SDroid/blob/master/SDroid.SteamWeb/README.md#login).
+click [here](/SDroid.SteamWeb/README.md#weblogin) and for a sample of login process
+click [here](/SDroid.SteamWeb/README.md#login).
 
 #### Authenticator
 
