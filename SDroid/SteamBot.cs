@@ -155,6 +155,7 @@ namespace SDroid
 
         // ReSharper disable once FunctionComplexityOverflow
         // ReSharper disable once MethodTooLong
+        // ReSharper disable once ExcessiveIndentation
         protected virtual async Task BotLogin()
         {
             lock (this)

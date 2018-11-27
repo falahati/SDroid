@@ -1,26 +1,28 @@
 ﻿## SDroid.SteamWeb
-SDroid.SteamWeb is a C# library that provides Steam web login, access and WebAPI functionalities
+**SDroid.SteamWeb** is a C# library that provides Steam web login, access and WebAPI functionalities
 
 ## Classes
-Followings are the classes available on this library along with their primary responsibility.
+Followings are the classes available in this library along with their primary responsibility.
 
-#### SteamWebAccess
+#### `SteamWebAccess`
 
 `SteamWebAccess` is the class that can be used to request content from Steam's website. Being this request a JSON request, a binary one or a simple
-page content retrieval; this the class you need to use.
+page content retrieval; this is the class you need to use.
 
-#### WebSession
+#### `WebSession`
 
 `WebSession` is essentially the cookie holder used by an instance of `SteamWebAccess` to request content from
-the Steam's website. A valid `WebSession` can be retrieved with a successful login or by deserializing from
+the Steam's website. 
+
+A valid `WebSession` can be retrieved with a successful login or by deserializing from
 an older login. This class also holds information regarding the logged in session including `SessionId` and
 SteamGuard Machine Authentication Token.
 
-#### SteamWebAPI
+#### `SteamWebAPI`
 
 `SteamWebAPI` is a wrapper around an instance of `SteamWebAccess` tailor-made to access Steam's API endpoints.
 
-#### WebLogin
+#### `WebLogin`
 
 `WebLogin` allows you to start an authentication process with the Steam's website and acquire a valid instance of `WebSession` that can be used
 for creating an instance of `SteamWebAccess` or serialized to disk for later usage.

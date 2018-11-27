@@ -12,6 +12,7 @@ using SteamKit2;
 
 namespace SDroid.SteamTrade
 {
+    // ReSharper disable once HollowTypeName
     public class TradeManager : IDisposable
     {
         public event EventHandler<TradeCreatedEventArgs> TradeCreated;
