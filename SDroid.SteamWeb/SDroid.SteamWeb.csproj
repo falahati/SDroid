@@ -11,6 +11,7 @@
     <Product>SDroid</Product>
     <PackageProjectUrl>https://github.com/falahati/SDroid</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/falahati/SDroid/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageIconUrl>https://github.com/falahati/SDroid/tree/master/SDroid.SteamWeb/Icon.png?raw=true</PackageIconUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <IncludeSource>true</IncludeSource>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -41,5 +42,15 @@
     </PackageReference>
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="readme.txt">
+      <Pack>true</Pack>
+      <PackagePath>\</PackagePath>
+    </Content>
+    <Content Include="Icon.png">
+      <Pack>true</Pack>
+      <PackagePath>\</PackagePath>
+    </Content>
   </ItemGroup>
 </Project>
