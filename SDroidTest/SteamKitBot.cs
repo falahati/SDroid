@@ -2,51 +2,23 @@
 using System.Threading.Tasks;
 using ConsoleUtilities;
 using SDroid;
-using SDroid.Interfaces;
 using SteamKit2;
 
 namespace SDroidTest
 {
-    internal class SteamKitBot : SDroid.SteamKitBot, ISteamKitChatBot
+    internal class SteamKitBot : SDroid.SteamKitBot
     {
         /// <inheritdoc />
         public SteamKitBot(SteamKitBotSettings settings, IBotLogger botLogger) : base(settings, botLogger)
         {
+            SubscribedCallbacks.Add(
+                CallbackManager.Subscribe<SteamFriends.FriendMsgCallback>(
+                    OnSteamFriendsMessage));
         }
 
         public new SteamKitBotSettings BotSettings
         {
             get => base.BotSettings as SteamKitBotSettings;
-        }
-
-        /// <inheritdoc />
-        public async Task OnChatGameInvited(SteamID partnerSteamId, string message)
-        {
-            await BotLogger
-                .Info(nameof(OnChatGameInvited), "Invited to game by {0}. Message = {1}", partnerSteamId, message)
-                .ConfigureAwait(false);
-        }
-
-        /// <inheritdoc />
-        public async Task OnChatHistoricMessageReceived(SteamID partnerSteamId, string message)
-        {
-            await BotLogger.Info(nameof(OnChatHistoricMessageReceived), "Historic message from {0}. Message = {1}",
-                partnerSteamId, message).ConfigureAwait(false);
-        }
-
-        /// <inheritdoc />
-        public async Task OnChatMessageReceived(SteamID partnerSteamId, string message)
-        {
-            await BotLogger
-                .Info(nameof(OnChatMessageReceived), "New message from {0}. Message = {1}", partnerSteamId, message)
-                .ConfigureAwait(false);
-        }
-
-        /// <inheritdoc />
-        public async Task OnChatPartnerEvent(SteamID partnerSteamId, SteamKitChatPartnerEvent chatEvent)
-        {
-            await BotLogger.Info(nameof(OnChatPartnerEvent), "Chat event by {0}. SteamKitChatPartnerEvent = {1}",
-                partnerSteamId, chatEvent).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -115,6 +87,36 @@ namespace SDroidTest
             });
 
             return Task.CompletedTask;
+        }
+
+        private void OnSteamFriendsMessage(SteamFriends.FriendMsgCallback friendMsgCallback)
+        {
+            switch (friendMsgCallback.EntryType)
+            {
+                case EChatEntryType.ChatMsg:
+                    BotLogger
+                        .Info(nameof(OnSteamFriendsMessage), "New message from {0}. Message = {1}",
+                            friendMsgCallback.Sender,
+                            friendMsgCallback.Message);
+
+                    break;
+                case EChatEntryType.HistoricalChat:
+                    BotLogger.Info(nameof(OnSteamFriendsMessage), "Historic message from {0}. Message = {1}",
+                        friendMsgCallback.Sender, friendMsgCallback.Message);
+
+                    break;
+                case EChatEntryType.InviteGame:
+                    BotLogger
+                        .Info(nameof(OnSteamFriendsMessage), "Invited to game by {0}. Message = {1}",
+                            friendMsgCallback.Sender, friendMsgCallback.Message);
+
+                    break;
+                default:
+                    BotLogger.Info(nameof(OnSteamFriendsMessage), "Chat event by {0}. EChatEntryType = {1}",
+                        friendMsgCallback.Sender, friendMsgCallback.EntryType);
+
+                    break;
+            }
         }
     }
 }

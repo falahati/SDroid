@@ -49,14 +49,6 @@ namespace SDroid
                 CallbackManager.Subscribe<SteamUser.AccountInfoCallback>(OnInternalAccountInfoAvailable));
             SubscribedCallbacks.Add(
                 CallbackManager.Subscribe<SteamUser.WalletInfoCallback>(OnInternalWalletInfoAvailable));
-
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            if (this is ISteamKitChatBot)
-            {
-                SubscribedCallbacks.Add(
-                    CallbackManager.Subscribe<SteamFriends.FriendMsgCallback>(
-                        OnInternalFriendSteamFriendsMessageReceived));
-            }
         }
 
         public override void Dispose()
@@ -263,63 +255,6 @@ namespace SDroid
             OnAccountInfoAvailable(accountInfoCallback);
         }
 
-        private void OnInternalFriendSteamFriendsMessageReceived(SteamFriends.FriendMsgCallback friendMsgCallback)
-        {
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            if (this is ISteamKitChatBot chatBot)
-            {
-                BotLogger.Debug(nameof(OnInternalFriendSteamFriendsMessageReceived),
-                    "Received a new chat event. SteamFriends.FriendMsgCallback.EntryType = `{0}`",
-                    friendMsgCallback.EntryType);
-
-                switch (friendMsgCallback.EntryType)
-                {
-                    case EChatEntryType.ChatMsg:
-                        chatBot.OnChatMessageReceived(friendMsgCallback.Sender, friendMsgCallback.Message);
-
-                        break;
-                    case EChatEntryType.HistoricalChat:
-                        chatBot.OnChatHistoricMessageReceived(friendMsgCallback.Sender, friendMsgCallback.Message);
-
-                        break;
-                    case EChatEntryType.InviteGame:
-                        chatBot.OnChatGameInvited(friendMsgCallback.Sender, friendMsgCallback.Message);
-
-                        break;
-                    case EChatEntryType.Typing:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.Typing);
-
-                        break;
-                    case EChatEntryType.WasKicked:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.Kicked);
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LeftChat);
-
-                        break;
-                    case EChatEntryType.WasBanned:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.Banned);
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LeftChat);
-
-                        break;
-                    case EChatEntryType.Disconnected:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.Disconnected);
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LeftChat);
-
-                        break;
-                    case EChatEntryType.LeftConversation:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LeftChat);
-
-                        break;
-                    case EChatEntryType.Entered:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.EnteredChat);
-
-                        break;
-                    case EChatEntryType.LinkBlocked:
-                        chatBot.OnChatPartnerEvent(friendMsgCallback.Sender, SteamKitChatPartnerEvent.LinkBlocked);
-
-                        break;
-                }
-            }
-        }
 
         private void OnInternalSteamClientConnected(SteamClient.ConnectedCallback connectedCallback)
         {
