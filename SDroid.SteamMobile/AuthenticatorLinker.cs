@@ -21,10 +21,10 @@ namespace SDroid.SteamMobile
         /// <summary>
         ///     Initializes a new instance of the <see cref="AuthenticatorLinker" /> class.
         /// </summary>
-        /// <param name="session">An logged-in session's data.</param>
-        public AuthenticatorLinker(MobileSession session)
+        /// <param name="webAccess">A logged-in SteamMobileWebAccess instance.</param>
+        public AuthenticatorLinker(SteamMobileWebAccess webAccess)
         {
-            SteamWeb = new SteamMobileWebAccess(session);
+            SteamWeb = webAccess ?? throw new ArgumentNullException(nameof(webAccess));
         }
 
         /// <summary>
