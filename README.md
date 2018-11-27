@@ -10,15 +10,21 @@ Based on [geel9's SteamAuth](https://github.com/geel9/SteamAuth) and [Jessecar96
 
 Click [here](/SDroid.SteamWeb/README.md) to read more about this library.
 
+This library is available as a NuGet package [here](https://www.nuget.org/packages/SDroid.SteamWeb).
+
 #### SDroid.SteamMobile
 **SDroid.SteamMobile** is a C# library that provides Steam Mobile and Mobile Authenticator functionalities.
 
 Click [here](/SDroid.SteamMobile/README.md) to read more about this library.
 
+This library is available as a NuGet package [here](https://www.nuget.org/packages/SDroid.SteamMobile).
+
 #### SDroid.SteamTrade
 **SDroid.SteamTrade** is a C# library that provides Steam trading and inventory retrieval functionalities.
 
 Click [here](/SDroid.SteamTrade/README.md) to read more about this library.
+
+This library is available as a NuGet package [here](https://www.nuget.org/packages/SDroid.SteamTrade).
 
 #### SDroid
 **SDroid** in the highest level library in this project that aims to provides developers with an easier path to
@@ -26,6 +32,8 @@ design, develop and deploy a custom bot for the Steam Network.
 
 This readme file contains information about the types available in this library and links to some simple
 sample bots developed with it.
+
+This library is available as a NuGet package [here](https://www.nuget.org/packages/SDroid).
 
 ## Classes
 Followings are the classes available in this library along with their primary responsibility.
