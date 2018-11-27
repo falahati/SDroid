@@ -13,6 +13,7 @@
     <Product>SDroid</Product>
     <PackageProjectUrl>https://github.com/falahati/SDroid</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/falahati/SDroid/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageIconUrl>https://github.com/falahati/SDroid/raw/master/SDroid/Icon.png</PackageIconUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <IncludeSource>true</IncludeSource>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -41,5 +42,15 @@
     <ProjectReference Include="..\SDroid.SteamMobile\SDroid.SteamMobile.csproj" />
     <ProjectReference Include="..\SDroid.SteamTrade\SDroid.SteamTrade.csproj" />
     <ProjectReference Include="..\SDroid.SteamWeb\SDroid.SteamWeb.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="readme.txt">
+      <Pack>true</Pack>
+      <PackagePath>\</PackagePath>
+    </Content>
+    <Content Include="Icon.png">
+      <Pack>true</Pack>
+      <PackagePath>\</PackagePath>
+    </Content>
   </ItemGroup>
 </Project>
