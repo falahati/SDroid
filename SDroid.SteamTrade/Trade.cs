@@ -478,13 +478,13 @@ namespace SDroid.SteamTrade
             throw new EscrowDurationException();
         }
 
-        public async Task<UserInventory> GetPartnerInventory(SteamID tradePartner)
+        public async Task<UserInventory> GetPartnerInventory()
         {
             UserInventoryApp[] overview = null;
 
             try
             {
-                overview = await GetTradePartnerInventoryOverview(_steamWebAccess, tradePartner, _tradeOptions)
+                overview = await GetTradePartnerInventoryOverview(_steamWebAccess, PartnerSteamId, _tradeOptions)
                     .ConfigureAwait(false);
             }
             catch (Exception)
@@ -494,7 +494,7 @@ namespace SDroid.SteamTrade
 
             return new UserInventory(
                 _steamWebAccess,
-                tradePartner,
+                PartnerSteamId,
                 overview,
                 (access, id, appId, contextId) =>
                     GetTradePartnerInventory(access, id, appId, contextId, _tradeOptions)
