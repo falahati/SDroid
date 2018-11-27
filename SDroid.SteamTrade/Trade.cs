@@ -48,13 +48,13 @@ namespace SDroid.SteamTrade
         private Timer _timer;
         private CancellationTokenSource _tokenSource;
         private int _version;
-        public EventHandler<PartnerAcceptedEventArgs> PartnerAccepted;
-        public EventHandler<PartnerMessagedEventArgs> PartnerMessaged;
-        public EventHandler<PartnerOfferedItemsChangedEventArgs> PartnerOfferedItemsChanged;
-        public EventHandler<PartnerReadyStateChangedEventArgs> PartnerReadyStateChanged;
-        public EventHandler<PartnerStatusChangedEventArgs> PartnerStatusChanged;
-        public EventHandler<TradeEndedEventArgs> TradeEnded;
-        public EventHandler<TradeTimedOutEventArgs> TradeTimedOut;
+        public event EventHandler<PartnerAcceptedEventArgs> PartnerAccepted;
+        public event EventHandler<PartnerMessagedEventArgs> PartnerMessaged;
+        public event EventHandler<PartnerOfferedItemsChangedEventArgs> PartnerOfferedItemsChanged;
+        public event EventHandler<PartnerReadyStateChangedEventArgs> PartnerReadyStateChanged;
+        public event EventHandler<PartnerStatusChangedEventArgs> PartnerStatusChanged;
+        public event EventHandler<TradeEndedEventArgs> TradeEnded;
+        public event EventHandler<TradeTimedOutEventArgs> TradeTimedOut;
 
         internal Trade(
             SteamID other,
