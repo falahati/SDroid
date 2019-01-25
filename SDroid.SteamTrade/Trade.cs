@@ -35,6 +35,13 @@ namespace SDroid.SteamTrade
         private const string TradeStatusUrl = TradeUrl + "/tradestatus";
         private const string TradeToggleReadyUrl = TradeUrl + "/toggleready";
         internal const string TradeUrl = SteamWebAccess.CommunityBaseUrl + "/trade/{0}";
+        public event EventHandler<PartnerAcceptedEventArgs> PartnerAccepted;
+        public event EventHandler<PartnerMessagedEventArgs> PartnerMessaged;
+        public event EventHandler<PartnerOfferedItemsChangedEventArgs> PartnerOfferedItemsChanged;
+        public event EventHandler<PartnerReadyStateChangedEventArgs> PartnerReadyStateChanged;
+        public event EventHandler<PartnerStatusChangedEventArgs> PartnerStatusChanged;
+        public event EventHandler<TradeEndedEventArgs> TradeEnded;
+        public event EventHandler<TradeTimedOutEventArgs> TradeTimedOut;
 
         private readonly List<Asset> _myOfferedItems = new List<Asset>();
         private readonly Dictionary<int, Asset> _myOfferedItemsLocalCopy = new Dictionary<int, Asset>();
@@ -48,13 +55,6 @@ namespace SDroid.SteamTrade
         private Timer _timer;
         private CancellationTokenSource _tokenSource;
         private int _version;
-        public event EventHandler<PartnerAcceptedEventArgs> PartnerAccepted;
-        public event EventHandler<PartnerMessagedEventArgs> PartnerMessaged;
-        public event EventHandler<PartnerOfferedItemsChangedEventArgs> PartnerOfferedItemsChanged;
-        public event EventHandler<PartnerReadyStateChangedEventArgs> PartnerReadyStateChanged;
-        public event EventHandler<PartnerStatusChangedEventArgs> PartnerStatusChanged;
-        public event EventHandler<TradeEndedEventArgs> TradeEnded;
-        public event EventHandler<TradeTimedOutEventArgs> TradeTimedOut;
 
         internal Trade(
             SteamID other,

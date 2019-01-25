@@ -33,23 +33,13 @@ namespace SDroid
             BotStatus = SteamBotStatus.Ready;
         }
 
-        public virtual void Dispose()
-        {
-            StopBot().Wait();
-            SessionCheckTimer?.Dispose();
-            AuthenticatorConfirmationTimer?.Dispose();
-            CancellationTokenSource?.Dispose();
-            WebSessionLock?.Dispose();
-            WebAccess = null;
-            WebAPI = null;
-        }
+        protected IBotLogger BotLogger { get; set; }
 
-        public IBotLogger BotLogger { get; protected set; }
-        public IBotSettings BotSettings { get; protected set; }
-        public SteamBotStatus BotStatus { get; protected set; }
+        protected IBotSettings BotSettings { get; set; }
 
-        /// <inheritdoc />
-        public virtual SteamID SteamId
+        protected SteamBotStatus BotStatus { get; set; }
+
+        protected virtual SteamID SteamId
         {
             get
             {
@@ -62,8 +52,55 @@ namespace SDroid
             }
         }
 
-        public SteamWebAccess WebAccess { get; protected set; }
-        public SteamWebAPI WebAPI { get; protected set; }
+        protected SteamWebAccess WebAccess { get; set; }
+
+        protected SteamWebAPI WebAPI { get; set; }
+
+        public virtual void Dispose()
+        {
+            StopBot().Wait();
+            SessionCheckTimer?.Dispose();
+            AuthenticatorConfirmationTimer?.Dispose();
+            CancellationTokenSource?.Dispose();
+            WebSessionLock?.Dispose();
+            WebAccess = null;
+            WebAPI = null;
+        }
+
+        /// <inheritdoc />
+        IBotLogger ISteamBot.BotLogger
+        {
+            get => BotLogger;
+        }
+
+        /// <inheritdoc />
+        IBotSettings ISteamBot.BotSettings
+        {
+            get => BotSettings;
+        }
+
+
+        /// <inheritdoc />
+        SteamBotStatus ISteamBot.BotStatus
+        {
+            get => BotStatus;
+        }
+
+        /// <inheritdoc />
+        SteamID ISteamBot.SteamId
+        {
+            get => SteamId;
+        }
+
+        SteamWebAccess ISteamBot.WebAccess
+        {
+            get => WebAccess;
+        }
+
+        SteamWebAPI ISteamBot.WebAPI
+        {
+            get => WebAPI;
+        }
 
         /// <inheritdoc />
         public override string ToString()
@@ -104,7 +141,7 @@ namespace SDroid
             AuthenticatorConfirmationTimer?.Dispose();
 
             await BotLogger.Debug(nameof(StopBot), "Waiting for bot to stop.").ConfigureAwait(false);
-            
+
             await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
 
             //while (true)
@@ -220,7 +257,9 @@ namespace SDroid
                     {
                         var webAccess = new SteamMobileWebAccess(
                             authenticatorController.BotAuthenticatorSettings.Authenticator.Session,
-                            IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress) ? ipAddress : IPAddress.Any,
+                            IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress)
+                                ? ipAddress
+                                : IPAddress.Any,
                             string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy));
 
                         if (await webAccess.VerifySession().ConfigureAwait(false))
@@ -236,7 +275,8 @@ namespace SDroid
                             .ConfigureAwait(false);
 
                         if (await
-                            authenticatorController.BotAuthenticatorSettings.Authenticator.Session.RefreshSession(webAccess)
+                            authenticatorController.BotAuthenticatorSettings.Authenticator.Session
+                                .RefreshSession(webAccess)
                                 .ConfigureAwait(false))
                         {
                             if (await webAccess.VerifySession().ConfigureAwait(false))
@@ -504,14 +544,23 @@ namespace SDroid
 
                 await BotLogger.Debug(nameof(OnCheckSession), "Checking session.").ConfigureAwait(false);
 
-                if (!await WebAccess.VerifySession().ConfigureAwait(false))
+                try
                 {
-                    await BotLogger
-                        .Warning(nameof(OnCheckSession), "Session expired. Forcefully starting a new login process.")
-                        .ConfigureAwait(false);
-
-                    await BotLogin().ConfigureAwait(false);
+                    if (await WebAccess.VerifySession().ConfigureAwait(false))
+                    {
+                        return;
+                    }
                 }
+                catch (Exception e)
+                {
+                    await BotLogger.Warning(nameof(OnCheckSession), e.Message).ConfigureAwait(false);
+                }
+
+                await BotLogger
+                    .Warning(nameof(OnCheckSession), "Session expired. Forcefully starting a new login process.")
+                    .ConfigureAwait(false);
+
+                await BotLogin().ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -566,7 +615,8 @@ namespace SDroid
                     await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Updating IAuthenticatorBot's session.")
                         .ConfigureAwait(false);
 
-                    if (session is MobileSession mobileSession && authenticatorController.BotAuthenticatorSettings?.Authenticator != null)
+                    if (session is MobileSession mobileSession &&
+                        authenticatorController.BotAuthenticatorSettings?.Authenticator != null)
                     {
                         authenticatorController.BotAuthenticatorSettings.Authenticator = new Authenticator(
                             authenticatorController.BotAuthenticatorSettings.Authenticator.AuthenticatorData,

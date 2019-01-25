@@ -51,6 +51,24 @@ namespace SDroid
                 CallbackManager.Subscribe<SteamUser.WalletInfoCallback>(OnInternalWalletInfoAvailable));
         }
 
+        protected new ISteamKitBotSettings BotSettings
+        {
+            get => base.BotSettings as ISteamKitBotSettings;
+        }
+
+        protected CallbackManager CallbackManager { get; set; }
+
+        protected SteamClient SteamClient { get; set; }
+
+        protected SteamFriends SteamFriends { get; set; }
+
+        protected override SteamID SteamId
+        {
+            get => SteamClient.SteamID ?? base.SteamId;
+        }
+
+        protected SteamUser SteamUser { get; set; }
+
         public override void Dispose()
         {
             base.Dispose();
@@ -71,20 +89,30 @@ namespace SDroid
             CallbackManager = null;
         }
 
-        public override SteamID SteamId
+        ISteamKitBotSettings ISteamKitBot.BotSettings
         {
-            get => SteamClient.SteamID ?? base.SteamId;
+            get => BotSettings;
         }
 
-        public new ISteamKitBotSettings BotSettings
+        CallbackManager ISteamKitBot.CallbackManager
         {
-            get => base.BotSettings as ISteamKitBotSettings;
+            get => CallbackManager;
         }
 
-        public CallbackManager CallbackManager { get; protected set; }
-        public SteamClient SteamClient { get; protected set; }
-        public SteamFriends SteamFriends { get; protected set; }
-        public SteamUser SteamUser { get; protected set; }
+        SteamClient ISteamKitBot.SteamClient
+        {
+            get => SteamClient;
+        }
+
+        SteamFriends ISteamKitBot.SteamFriends
+        {
+            get => SteamFriends;
+        }
+
+        SteamUser ISteamKitBot.SteamUser
+        {
+            get => SteamUser;
+        }
 
         public override async Task StartBot()
         {
