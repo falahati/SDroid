@@ -1,9 +1,11 @@
 ﻿using System;
+using Newtonsoft.Json;
 
 namespace SDroid.SteamTrade.Models.UserInventory
 {
     public class UserInventoryAssetDescription : IEquatable<UserInventoryAssetDescription>
     {
+        [JsonConstructor]
         internal UserInventoryAssetDescription(
             long appId,
             long classId,
