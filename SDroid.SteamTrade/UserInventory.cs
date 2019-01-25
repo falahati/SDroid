@@ -141,7 +141,7 @@ namespace SDroid.SteamTrade
             }
 
             if (matched?.Success != true ||
-                matched.Groups.Count < 1 ||
+                matched.Groups.Count <= 1 ||
                 !matched.Groups[1].Success ||
                 string.IsNullOrWhiteSpace(matched.Groups[1].Value))
             {
