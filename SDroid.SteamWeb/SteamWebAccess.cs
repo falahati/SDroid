@@ -209,7 +209,7 @@ namespace SDroid.SteamWeb
             {
                 var result = await FetchString(
                     new SteamWebAccessRequest(
-                        @"http://ipinfo.io",
+                        @"https://ipinfo.io/json",
                         SteamWebAccessRequestMethod.Get,
                         null
                     )
