@@ -23,22 +23,20 @@ namespace SDroid.SteamTrade
             _descriptions = descriptions?.Select(description => description.ToSteamAssetDescription()).Distinct()
                 .ToArray();
 
-            var ourAssets = new List<UserInventoryAsset>();
-            var theirAssets = new List<UserInventoryAsset>();
+            var ourAssets = new List<TradeOfferAsset>();
+            var theirAssets = new List<TradeOfferAsset>();
 
             if (offer.ItemsToGive != null)
             {
                 foreach (var asset in offer.ItemsToGive)
                 {
                     // TODO: for currency items we need to check descriptions for currency bool and use the appropriate method
-                    if (!asset.IsMissing)
-                    {
-                        ourAssets.Add(asset.ToSteamInventoryAsset());
-                    }
-                    else
+                    if (asset.IsMissing)
                     {
                         HasMissing = true;
                     }
+
+                    ourAssets.Add(asset.ToTradeOfferAsset());
                 }
             }
 
@@ -47,14 +45,12 @@ namespace SDroid.SteamTrade
                 foreach (var asset in offer.ItemsToReceive)
                 {
                     // TODO: for currency items we need to check descriptions for currency bool and use the appropriate method
-                    if (!asset.IsMissing)
-                    {
-                        theirAssets.Add(asset.ToSteamInventoryAsset());
-                    }
-                    else
+                    if (asset.IsMissing)
                     {
                         HasMissing = true;
                     }
+
+                    theirAssets.Add(asset.ToTradeOfferAsset());
                 }
             }
 

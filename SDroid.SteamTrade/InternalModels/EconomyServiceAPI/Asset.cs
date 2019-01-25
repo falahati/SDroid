@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using SDroid.SteamTrade.Helpers;
+using SDroid.SteamTrade.Models.TradeOffer;
 using SDroid.SteamTrade.Models.UserInventory;
 
 namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
@@ -33,9 +34,9 @@ namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
         [JsonProperty("missing")]
         public bool IsMissing { get; set; }
 
-        public UserInventoryAsset ToSteamInventoryAsset()
+        public TradeOfferAsset ToTradeOfferAsset()
         {
-            return new UserInventoryAsset(AppId, ContextId, AssetId, ClassId, InstanceId, Amount);
+            return new TradeOfferAsset(AppId, ContextId, AssetId, ClassId, InstanceId, IsMissing, Amount);
         }
     }
 }
