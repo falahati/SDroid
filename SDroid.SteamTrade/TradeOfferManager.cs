@@ -11,6 +11,7 @@ using SDroid.SteamTrade.Exceptions;
 using SDroid.SteamTrade.InternalModels.EconomyServiceAPI;
 using SDroid.SteamTrade.InternalModels.InventoryJson;
 using SDroid.SteamTrade.InternalModels.TradeOfferJson;
+using SDroid.SteamTrade.Models.Trade;
 using SDroid.SteamTrade.Models.TradeOffer;
 using SDroid.SteamTrade.Models.UserInventory;
 using SDroid.SteamWeb;
@@ -33,7 +34,7 @@ namespace SDroid.SteamTrade
 
         private const string TradeOfferSendUrl = TradeOfferNewUrl + "/send";
         private const string TradeOfferUrl = SteamWebAccess.CommunityBaseUrl + "/tradeoffer/{0}";
-        private static readonly DateTime Epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        internal static readonly DateTime Epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         private static readonly JsonSerializerSettings JsonSerializerSettings =
             new JsonSerializerSettings
@@ -699,11 +700,16 @@ namespace SDroid.SteamTrade
             bool getDescriptions,
             bool activeOnly,
             bool historicalOnly,
-            ulong timeHistoricalCutoff = 1389106496)
+            DateTime? timeHistoricalCutoff = null)
         {
             if (!getSentOffers && !getReceivedOffers)
             {
                 throw new ArgumentException("getSentOffers and getReceivedOffers can't be both false");
+            }
+
+            if (timeHistoricalCutoff == null)
+            {
+                timeHistoricalCutoff = Epoch.AddSeconds(1389106496);
             }
 
             var response = await _tradeOfferOptions.RetryOperationAsync(
@@ -720,7 +726,7 @@ namespace SDroid.SteamTrade
                         language = "en_us",
                         active_only = activeOnly ? 1 : 0,
                         historical_only = historicalOnly ? 1 : 0,
-                        time_historical_cutoff = timeHistoricalCutoff.ToString()
+                        time_historical_cutoff = ((int) (timeHistoricalCutoff.Value - Epoch).TotalSeconds).ToString()
                     }
                 )
             ).ConfigureAwait(false);
@@ -916,7 +922,7 @@ namespace SDroid.SteamTrade
         {
             try
             {
-                var startTime = DateTime.Now;
+                var startTime = DateTime.UtcNow;
 
                 TradeOffer[] offers;
 
@@ -928,8 +934,7 @@ namespace SDroid.SteamTrade
                 {
                     offers = await GetTradeOffers(
                             true, true, false, true, false,
-                            (ulong) (LastUpdate.Value.ToUniversalTime() - TimeSpan.FromMinutes(5) - Epoch)
-                            .TotalSeconds)
+                            LastUpdate.Value - TimeSpan.FromMinutes(5))
                         .ConfigureAwait(false);
                 }
 

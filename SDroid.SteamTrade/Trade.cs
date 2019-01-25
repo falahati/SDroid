@@ -105,7 +105,7 @@ namespace SDroid.SteamTrade
 
         public TradeStatus Status { get; private set; } = TradeStatus.Active;
 
-        public DateTime TradeCreated { get; } = DateTime.Now;
+        public DateTime TradeCreated { get; } = DateTime.UtcNow;
 
         public long? TradeId { get; private set; }
 
@@ -733,7 +733,7 @@ namespace SDroid.SteamTrade
                     _processedEventList.Add(tradeEvent);
                 }
 
-                var eventDateTime = new DateTime(1970, 1, 1) + TimeSpan.FromSeconds(tradeEvent.Timestamp);
+                var eventDateTime = TradeOfferManager.Epoch.AddSeconds(tradeEvent.Timestamp);
 
                 var isUs = tradeEvent.SteamId != PartnerSteamId.ConvertToUInt64();
 
@@ -929,7 +929,7 @@ namespace SDroid.SteamTrade
 
             if (addedItems.Length > 0 || removedItems.Length > 0)
             {
-                LastPartnerInteraction = DateTime.Now;
+                LastPartnerInteraction = DateTime.UtcNow;
             }
 
             lock (_partnerOfferedItems)

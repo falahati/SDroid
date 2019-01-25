@@ -54,12 +54,18 @@ namespace SDroid.SteamTrade
                 }
             }
 
-            //assume public individual
+            // Assume public individual
             TradeOfferId = offer.TradeOfferId.Value;
             IsOurOffer = offer.IsOurOffer;
-            ExpirationTime = offer.ExpirationTime;
-            TimeCreated = offer.TimeCreated;
-            TimeUpdated = offer.TimeUpdated;
+            ExpirationTime = offer.ExpirationTime <= 0
+                ? (DateTime?) null
+                : TradeOfferManager.Epoch.AddSeconds(offer.ExpirationTime);
+            TimeCreated = offer.TimeCreated <= 0
+                ? (DateTime?) null
+                : TradeOfferManager.Epoch.AddSeconds(offer.TimeCreated);
+            TimeUpdated = offer.TimeUpdated <= 0
+                ? (DateTime?) null
+                : TradeOfferManager.Epoch.AddSeconds(offer.TimeUpdated);
             Message = offer.Message;
             OurAssets = ourAssets.ToArray();
             TheirAssets = theirAssets.ToArray();
@@ -116,7 +122,7 @@ namespace SDroid.SteamTrade
             }
         }
 
-        public int ExpirationTime { get; }
+        public DateTime? ExpirationTime { get; }
 
         public bool HasMissing { get; }
 
@@ -129,17 +135,18 @@ namespace SDroid.SteamTrade
 
         public string Message { get; }
 
-        public UserInventoryAsset[] OurAssets { get; }
+        public TradeOfferAsset[] OurAssets { get; }
 
         public SteamID PartnerSteamId { get; }
 
         public TradeOfferStatus Status { get; }
 
-        public UserInventoryAsset[] TheirAssets { get; }
+        public TradeOfferAsset[] TheirAssets { get; }
 
-        public int TimeCreated { get; }
+        public DateTime? TimeCreated { get; }
 
-        public int TimeUpdated { get; }
+        public DateTime? TimeUpdated { get; }
+
         public long? TradeId { get; }
 
         public long TradeOfferId { get; }
