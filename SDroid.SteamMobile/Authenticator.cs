@@ -37,7 +37,7 @@ namespace SDroid.SteamMobile
 
         protected static readonly Regex ConfirmationRegex =
             new Regex(
-                "<div class=\"mobileconf_list_entry\" id=\"confirmation[0-9]+\" data-confid=\"(\\d+)\" data-key=\"(\\d+)\" data-type=\"(\\d+)\" data-creator=\"(\\d+)\"");
+                "<div class=\"mobileconf_list_entry\" id=\"conf[0-9]+\" data-confid=\"(\\d+)\" data-key=\"(\\d+)\" data-type=\"(\\d+)\" data-creator=\"(\\d+)\"");
 
         protected static readonly char[] SteamGuardCodeTranslations =
         {
@@ -361,7 +361,7 @@ namespace SDroid.SteamMobile
 
             if (response == null || !ConfirmationRegex.IsMatch(response))
             {
-                if (string.IsNullOrWhiteSpace(response) || !response.Contains("<div>Nothing to confirm</div>"))
+                if (string.IsNullOrWhiteSpace(response) || !response.Contains("id=\"mobileconf_empty\""))
                 {
                     throw new TokenInvalidException();
                 }
