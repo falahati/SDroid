@@ -44,6 +44,9 @@ namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
         [JsonProperty("tradeofferid")]
         public long? TradeOfferId { get; set; }
 
+        [JsonProperty("tradeid")]
+        public long? TradeId { get; set; }
+
         public bool IsValid()
         {
             return TradeOfferId > 0 &&

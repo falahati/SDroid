@@ -69,6 +69,7 @@ namespace SDroid.SteamTrade
             TheirAssets = theirAssets.ToArray();
             PartnerSteamId = new SteamID(Convert.ToUInt32(offer.AccountIdOther), EUniverse.Public,
                 EAccountType.Individual);
+            TradeId = offer.TradeId;
 
             switch (offer.State)
             {
@@ -143,6 +144,7 @@ namespace SDroid.SteamTrade
         public int TimeCreated { get; }
 
         public int TimeUpdated { get; }
+        public long? TradeId { get; }
 
         public long TradeOfferId { get; }
 

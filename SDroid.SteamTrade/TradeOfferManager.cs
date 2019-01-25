@@ -283,7 +283,7 @@ namespace SDroid.SteamTrade
             }
         }
 
-        public async Task Accept(TradeOffer offer)
+        public async Task<long?> Accept(TradeOffer offer)
         {
             if (offer.IsOurOffer ||
                 offer.Status != TradeOfferStatus.Active)
@@ -310,11 +310,21 @@ namespace SDroid.SteamTrade
                 shouldThrowExceptionOnTotalFailure: false
             ).ConfigureAwait(false);
 
-            if (response?.TradeOfferId == offer.TradeOfferId && response.IsAccepted ||
-                (await GetTradeOffer(offer.TradeOfferId).ConfigureAwait(false))?.Status ==
-                TradeOfferStatus.Accepted)
+            if (response?.IsAccepted == true && response.TradeId != null)
             {
-                return;
+                return response.TradeId;
+            }
+
+            var refreshedOffer = await GetTradeOffer(offer.TradeOfferId).ConfigureAwait(false);
+
+            if (refreshedOffer?.Status == TradeOfferStatus.Accepted && refreshedOffer.TradeId != null)
+            {
+                return refreshedOffer.TradeId;
+            }
+
+            if (response?.IsAccepted == true || refreshedOffer?.Status == TradeOfferStatus.Accepted)
+            {
+                return null;
             }
 
             if (!string.IsNullOrWhiteSpace(response?.Error))
@@ -353,8 +363,7 @@ namespace SDroid.SteamTrade
             ).ConfigureAwait(false);
 
             if (response?.TradeOfferId == offer.TradeOfferId ||
-                (await GetTradeOffer(offer.TradeOfferId).ConfigureAwait(false))?.Status ==
-                TradeOfferStatus.Canceled)
+                (await GetTradeOffer(offer.TradeOfferId).ConfigureAwait(false))?.Status == TradeOfferStatus.Canceled)
             {
                 return;
             }
@@ -656,6 +665,23 @@ namespace SDroid.SteamTrade
         public Task<UserInventory> GetPartnerInventory(SteamID tradeOfferPartner)
         {
             return GetPartnerInventory(tradeOfferPartner, null);
+        }
+
+        public Task<TradeReceipt> GetReceipt(TradeOffer offer)
+        {
+            if (offer.Status != TradeOfferStatus.Accepted || !(offer.TradeId > 0))
+            {
+                throw new InvalidOperationException("Can't get a receipt for a trade offer that is not yet accepted.");
+            }
+
+            try
+            {
+                return TradeManager.GetReceipt(TradeOfferOptions, SteamWebAccess, offer.TradeId.Value);
+            }
+            catch (TradeException e)
+            {
+                throw new TradeOfferException(e.Message, e);
+            }
         }
 
         public Task<TradeOffer> GetTradeOffer(long offerId)

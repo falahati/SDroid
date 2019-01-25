@@ -17,6 +17,9 @@ namespace SDroid.SteamTrade.InternalModels.TradeOfferJson
         public bool NeedsMobileConfirmation { get; set; }
 
         [JsonProperty("tradeid")]
+        public long? TradeId { get; set; }
+
+        [JsonProperty("tradeofferid")]
         public long? TradeOfferId { get; set; }
     }
 }

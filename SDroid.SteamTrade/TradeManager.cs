@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using SDroid.SteamTrade.EventArguments;
 using SDroid.SteamTrade.Exceptions;
+using SDroid.SteamTrade.InternalModels.TradeJson;
 using SDroid.SteamTrade.Models.Trade;
 using SDroid.SteamTrade.Models.TradeOffer;
 using SDroid.SteamWeb;
@@ -15,6 +18,7 @@ namespace SDroid.SteamTrade
     // ReSharper disable once HollowTypeName
     public class TradeManager : IDisposable
     {
+        private const string TradeReceiptUrl = Trade.TradeUrl + "/receipt";
         public event EventHandler<TradeCreatedEventArgs> TradeCreated;
         private readonly SemaphoreSlim _lockObject = new SemaphoreSlim(1, 1);
         private readonly SteamWebAccess _steamWebAccess;
@@ -39,6 +43,78 @@ namespace SDroid.SteamTrade
         public void Dispose()
         {
             _lockObject?.Dispose();
+        }
+
+        internal static async Task<TradeReceipt> GetReceipt(
+            OperationRetryHelper retryHelper,
+            SteamWebAccess steamWebAccess,
+            long tradeId)
+        {
+            var response = await retryHelper.RetryOperationAsync(
+                () => steamWebAccess.FetchString(
+                    new SteamWebAccessRequest(
+                        string.Format(TradeReceiptUrl, tradeId),
+                        SteamWebAccessRequestMethod.Get,
+                        new QueryStringBuilder()
+                    )
+                    {
+                        Referer = string.Format(Trade.TradeUrl, tradeId)
+                    }
+                ),
+                shouldThrowExceptionOnTotalFailure: false
+            ).ConfigureAwait(false);
+
+            var errorMatched = Regex.Match(response, "<div id=\"error_msg\">\\s*([^<]+)\\s*<\\/div>");
+
+            if (errorMatched.Success)
+            {
+                if (errorMatched.Success &&
+                    errorMatched.Groups.Count > 1 &&
+                    errorMatched.Groups[1].Success &&
+                    !string.IsNullOrWhiteSpace(errorMatched.Groups[1].Value)
+                )
+                {
+                    throw new TradeException(errorMatched.Groups[1].Value.Trim());
+                }
+
+                throw new TradeException("Failed to retrieve trade receipt.");
+            }
+
+            var assets = new List<TradeReceiptAsset>();
+            var matchedAssets = new Regex("oItem = (.*?)\r\n").Matches(response);
+
+            foreach (Match matchedAsset in matchedAssets)
+            {
+                if (matchedAsset.Success &&
+                    matchedAsset.Groups.Count > 1 &&
+                    matchedAsset.Groups[1].Success &&
+                    !string.IsNullOrWhiteSpace(matchedAsset.Groups[1].Value)
+                )
+                {
+                    try
+                    {
+                        var asset = JsonConvert.DeserializeObject<TradeReceiptAsset>(
+                            matchedAsset.Groups[1].Value.Trim().Trim(';').Trim()
+                        );
+
+                        if (asset != null)
+                        {
+                            assets.Add(asset);
+                        }
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                }
+            }
+
+            if (assets.Count == 0)
+            {
+                throw new TradeException("Failed to retrieve trade receipt.");
+            }
+
+            return new TradeReceipt(assets.ToArray());
         }
 
         public async Task<Trade> CreateTrade(SteamID tradePartner)
@@ -85,6 +161,26 @@ namespace SDroid.SteamTrade
             }
 
             return new Trade[0];
+        }
+
+        public Task<TradeReceipt> GetReceipt(Trade trade)
+        {
+            if (trade.Status != TradeStatus.Completed || !(trade.TradeId > 0))
+            {
+                throw new InvalidOperationException("Can't get a receipt for a trade that is not yet completed.");
+            }
+
+            return GetReceipt(TradeOptions, _steamWebAccess, trade.TradeId.Value);
+        }
+
+        public Task<TradeReceipt> GetReceipt(long tradeId)
+        {
+            if (!(tradeId > 0))
+            {
+                throw new ArgumentOutOfRangeException(nameof(tradeId));
+            }
+
+            return GetReceipt(TradeOptions, _steamWebAccess, tradeId);
         }
 
 
