@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using ConsoleUtilities;
+using SDroid.SteamMobile;
 using SteamKit2;
 
 namespace SDroidTest
@@ -56,8 +58,54 @@ namespace SDroidTest
                 new ConsoleNavigationItem("SteamKitBot", (i, item) => StartSteamKitBot()),
                 new ConsoleNavigationItem("AuthenticatorBot", (i, item) => StartAuthenticatorBot()),
                 new ConsoleNavigationItem("Clear saved settings (Careful with authenticator example)",
-                    (i, item) => ClearSettings())
+                    (i, item) => ClearSettings()),
+                new ConsoleNavigationItem("Convert maFile", (i, item) => ConvertMaFile())
             }, "Select a sample bot to run");
+        }
+
+        private static void ConvertMaFile()
+        {
+            while (true)
+            {
+                var address = ConsoleWriter.Default.PrintQuestion("Address of maFile");
+
+                if (string.IsNullOrWhiteSpace(address))
+                {
+                    return;
+                }
+
+                if (!File.Exists(address))
+                {
+                    ConsoleWriter.Default.PrintError("File not found.");
+                    continue;
+                }
+
+                Authenticator authenticator = null;
+                try
+                {
+                    authenticator = Authenticator.DeSerializeFromFile(address);
+                }
+                catch
+                {
+                    // ignored
+                }
+
+                if (authenticator == null)
+                {
+                    ConsoleWriter.Default.PrintError("Bad file format.");
+                    continue;
+                }
+
+                try
+                {
+                    authenticator.SerializeToFile(Path.ChangeExtension(Path.GetFullPath(address), "maFile2"));
+                    ConsoleWriter.Default.PrintSuccess("Converted and saved to disk.");
+                }
+                catch
+                {
+                    ConsoleWriter.Default.PrintError("Failed to save to disk.");
+                }
+            }
         }
 
         private static void StartAuthenticatorBot()
