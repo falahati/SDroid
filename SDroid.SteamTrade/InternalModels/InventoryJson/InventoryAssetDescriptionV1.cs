@@ -7,6 +7,8 @@ namespace SDroid.SteamTrade.InternalModels.InventoryJson
 {
     internal class InventoryAssetDescriptionV1
     {
+        private const string ImageBaseAddress = "https://steamcommunity-a.akamaihd.net/economy/image/";
+
         [JsonProperty("appid")]
         [JsonConverter(typeof(JsonAsStringConverter<long>))]
         public long AppId { get; set; }
@@ -82,12 +84,24 @@ namespace SDroid.SteamTrade.InternalModels.InventoryJson
         public UserInventoryAssetDescription ToSteamAssetDescription()
         {
             return new UserInventoryAssetDescription(
-                AppId, ClassId, InstanceId, IconUrl, IconUrlLarge, Name, MarketHashName,
-                MarketName, Type, IsTradable, IsMarketable, IsCommodity, IsCurrency,
+                AppId,
+                ClassId,
+                InstanceId,
+                string.IsNullOrWhiteSpace(IconUrl) ? null : ImageBaseAddress + IconUrl,
+                string.IsNullOrWhiteSpace(IconUrlLarge) ? null : ImageBaseAddress + IconUrlLarge,
+                Name,
+                MarketHashName,
+                MarketName,
+                Type,
+                IsTradable,
+                IsMarketable,
+                IsCommodity,
+                IsCurrency,
                 Descriptions?.Select(entity => entity.ToSteamAssetDescriptionEntry()).ToArray() ??
                 new UserInventoryAssetDescriptionEntry[0],
                 Tags?.Select(tag => tag.ToSteamAssetDescriptionTag()).ToArray() ??
-                new UserInventoryAssetDescriptionTag[0]);
+                new UserInventoryAssetDescriptionTag[0]
+            );
         }
     }
 }
