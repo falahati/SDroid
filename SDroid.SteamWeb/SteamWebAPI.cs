@@ -102,7 +102,7 @@ namespace SDroid.SteamWeb
                 )
             ).ConfigureAwait(false);
 
-            return serverResponse?.Contains(@"/dev/registerkey") == true;
+            return serverResponse?.Contains(@"/dev/revokekey") == true;
         }
 
 
