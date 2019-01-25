@@ -1,4 +1,8 @@
 ## SDroid
+[![](https://img.shields.io/github/license/falahati/SDroid.svg?style=flat-square)](https://github.com/falahati/SDroid/blob/master/LICENSE)
+[![](https://img.shields.io/github/commit-activity/y/falahati/SDroid.svg?style=flat-square)](https://github.com/falahati/SDroid/commits/master)
+[![](https://img.shields.io/github/issues/falahati/SDroid.svg?style=flat-square)](https://github.com/falahati/SDroid/issues)
+
 **SDroid** is a framework for designing and running custom bots for Steam network capable of trading 
 and managing the Steam Account they are connected to. 
 
@@ -6,6 +10,9 @@ Based on [geel9's SteamAuth](https://github.com/geel9/SteamAuth) and [Jessecar96
 
 ## Componenets
 ### SDroid.SteamWeb
+[![](https://img.shields.io/nuget/dt/SDroid.SteamWeb.svg?style=flat-square)](https://www.nuget.org/packages/SDroid.SteamWeb)
+[![](https://img.shields.io/nuget/v/SDroid.SteamWeb.svg?style=flat-square)](https://www.nuget.org/packages/SDroid.SteamWeb)
+
 **SDroid.SteamWeb** is a C# library that provides Steam web login, access and WebAPI functionalities.
 
 Click [here](/SDroid.SteamWeb/README.md) to read more about this library.
@@ -13,6 +20,9 @@ Click [here](/SDroid.SteamWeb/README.md) to read more about this library.
 This library is available as a NuGet package [here](https://www.nuget.org/packages/SDroid.SteamWeb).
 
 ### SDroid.SteamMobile
+[![](https://img.shields.io/nuget/dt/SDroid.SteamMobile.svg?style=flat-square)](https://www.nuget.org/packages/SDroid.SteamMobile)
+[![](https://img.shields.io/nuget/v/SDroid.SteamMobile.svg?style=flat-square)](https://www.nuget.org/packages/SDroid.SteamMobile)
+
 **SDroid.SteamMobile** is a C# library that provides Steam Mobile and Mobile Authenticator functionalities.
 
 Click [here](/SDroid.SteamMobile/README.md) to read more about this library.
@@ -20,6 +30,9 @@ Click [here](/SDroid.SteamMobile/README.md) to read more about this library.
 This library is available as a NuGet package [here](https://www.nuget.org/packages/SDroid.SteamMobile).
 
 ### SDroid.SteamTrade
+[![](https://img.shields.io/nuget/dt/SDroid.SteamTrade.svg?style=flat-square)](https://www.nuget.org/packages/SDroid.SteamTrade)
+[![](https://img.shields.io/nuget/v/SDroid.SteamTrade.svg?style=flat-square)](https://www.nuget.org/packages/SDroid.SteamTrade)
+
 **SDroid.SteamTrade** is a C# library that provides Steam trading and inventory retrieval functionalities.
 
 Click [here](/SDroid.SteamTrade/README.md) to read more about this library.
@@ -27,6 +40,9 @@ Click [here](/SDroid.SteamTrade/README.md) to read more about this library.
 This library is available as a NuGet package [here](https://www.nuget.org/packages/SDroid.SteamTrade).
 
 ### SDroid
+[![](https://img.shields.io/nuget/dt/SDroid.svg?style=flat-square)](https://www.nuget.org/packages/SDroid)
+[![](https://img.shields.io/nuget/v/SDroid.svg?style=flat-square)](https://www.nuget.org/packages/SDroid)
+
 **SDroid** in the highest level library in this project that aims to provides developers with an easier path to
 design, develop and deploy a custom bot for the Steam Network.
 
@@ -34,6 +50,17 @@ This readme file contains information about the types available in this library 
 sample bots developed with it.
 
 This library is available as a NuGet package [here](https://www.nuget.org/packages/SDroid).
+
+## Donation
+Donations assist development and are greatly appreciated; also always remember that [every coffee counts!](https://media.makeameme.org/created/one-simply-does-i9k8kx.jpg) :)
+
+[![](https://img.shields.io/badge/fiat-PayPal-8a00a3.svg?style=flat-square)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=WR3KK2B6TYYQ4&item_name=Donation&currency_code=USD&source=url)
+[![](https://img.shields.io/badge/crypto-CoinPayments-8a00a3.svg?style=flat-square)](https://www.coinpayments.net/index.php?cmd=_donate&reset=1&merchant=820707aded07845511b841f9c4c335cd&item_name=Donate&currency=USD&amountf=20.00000000&allow_amount=1&want_shipping=0&allow_extra=1)
+[![](https://img.shields.io/badge/shetab-ZarinPal-8a00a3.svg?style=flat-square)](https://zarinp.al/@falahati)
+
+**--OR--**
+
+You can always donate your time by contributing to the project or by introducing it to others.
 
 ## Classes
 Followings are the classes available in this library along with their primary responsibility.
