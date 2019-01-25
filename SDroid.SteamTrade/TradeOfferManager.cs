@@ -928,7 +928,7 @@ namespace SDroid.SteamTrade
 
                 if (LastUpdate == null)
                 {
-                    offers = await GetTradeOffers(true, true, false, true, false).ConfigureAwait(false);
+                    offers = await GetTradeOffers(true, true, true, true, false).ConfigureAwait(false);
                 }
                 else
                 {
