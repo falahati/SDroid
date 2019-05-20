@@ -51,16 +51,16 @@ namespace SDroid
                 CallbackManager.Subscribe<SteamUser.WalletInfoCallback>(OnInternalWalletInfoAvailable));
         }
 
-        protected new ISteamKitBotSettings BotSettings
+        public new ISteamKitBotSettings BotSettings
         {
             get => base.BotSettings as ISteamKitBotSettings;
         }
 
-        protected CallbackManager CallbackManager { get; set; }
+        public CallbackManager CallbackManager { get; set; }
 
-        protected SteamClient SteamClient { get; set; }
+        public SteamClient SteamClient { get; set; }
 
-        protected SteamFriends SteamFriends { get; set; }
+        public SteamFriends SteamFriends { get; set; }
 
         protected override SteamID SteamId
         {
