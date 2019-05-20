@@ -883,10 +883,24 @@ namespace SDroid
                     "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
                     tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
                 .ConfigureAwait(false);
-            // ReSharper disable once PossibleNullReferenceException
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            await ((this as ITradeOfferBot)?.OnTradeOfferDeclined(tradeOfferStateChangedEventArgs.TradeOffer))
-                .ConfigureAwait(false);
+
+            try
+            {
+                // ReSharper disable once PossibleNullReferenceException
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                await ((this as ITradeOfferBot)?.OnTradeOfferDeclined(tradeOfferStateChangedEventArgs.TradeOffer))
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                tradeOfferStateChangedEventArgs.Processed = false;
+                await BotLogger.Error(
+                        nameof(OnInternalOfferDeclined),
+                        "Event failed with message: {0}",
+                        e.Message
+                    )
+                    .ConfigureAwait(false);
+            }
         }
 
         private async void OnInternalOfferInEscrow(
@@ -897,10 +911,24 @@ namespace SDroid
                     "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
                     tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
                 .ConfigureAwait(false);
-            // ReSharper disable once PossibleNullReferenceException
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            await ((this as ITradeOfferBot)?.OnTradeOfferInEscrow(tradeOfferStateChangedEventArgs.TradeOffer))
-                .ConfigureAwait(false);
+
+            try
+            {
+                // ReSharper disable once PossibleNullReferenceException
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                await ((this as ITradeOfferBot)?.OnTradeOfferInEscrow(tradeOfferStateChangedEventArgs.TradeOffer))
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                tradeOfferStateChangedEventArgs.Processed = false;
+                await BotLogger.Error(
+                        nameof(OnInternalOfferInEscrow),
+                        "Event failed with message: {0}",
+                        e.Message
+                    )
+                    .ConfigureAwait(false);
+            }
         }
 
         private async void OnInternalTradeCreated(object sender, TradeCreatedEventArgs tradeCreatedEventArgs)
@@ -909,10 +937,23 @@ namespace SDroid
                     "TradeCreatedEventArgs.PartnerSteamId = `{0}`",
                     tradeCreatedEventArgs.PartnerSteamId)
                 .ConfigureAwait(false);
-            // ReSharper disable once PossibleNullReferenceException
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            await ((this as ITradeBot)?.OnTradeCreated(tradeCreatedEventArgs.PartnerSteamId,
-                tradeCreatedEventArgs.Trade)).ConfigureAwait(false);
+
+            try
+            {
+                // ReSharper disable once PossibleNullReferenceException
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                await ((this as ITradeBot)?.OnTradeCreated(tradeCreatedEventArgs.PartnerSteamId,
+                    tradeCreatedEventArgs.Trade)).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                await BotLogger.Error(
+                        nameof(OnInternalTradeCreated),
+                        "Event failed with message: {0}",
+                        e.Message
+                    )
+                    .ConfigureAwait(false);
+            }
         }
 
         private async void OnInternalTradeOfferAccepted(
@@ -923,10 +964,24 @@ namespace SDroid
                     "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
                     tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
                 .ConfigureAwait(false);
-            // ReSharper disable once PossibleNullReferenceException
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            await ((this as ITradeOfferBot)?.OnTradeOfferAccepted(tradeOfferStateChangedEventArgs.TradeOffer))
-                .ConfigureAwait(false);
+
+            try
+            {
+                // ReSharper disable once PossibleNullReferenceException
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                await ((this as ITradeOfferBot)?.OnTradeOfferAccepted(tradeOfferStateChangedEventArgs.TradeOffer))
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                tradeOfferStateChangedEventArgs.Processed = false;
+                await BotLogger.Error(
+                        nameof(OnInternalTradeOfferAccepted),
+                        "Event failed with message: {0}",
+                        e.Message
+                    )
+                    .ConfigureAwait(false);
+            }
         }
 
         private async void OnInternalTradeOfferCanceled(
@@ -937,10 +992,24 @@ namespace SDroid
                     "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
                     tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
                 .ConfigureAwait(false);
-            // ReSharper disable once PossibleNullReferenceException
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            await ((this as ITradeOfferBot)?.OnTradeOfferCanceled(tradeOfferStateChangedEventArgs.TradeOffer))
-                .ConfigureAwait(false);
+
+            try
+            {
+                // ReSharper disable once PossibleNullReferenceException
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                await ((this as ITradeOfferBot)?.OnTradeOfferCanceled(tradeOfferStateChangedEventArgs.TradeOffer))
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                tradeOfferStateChangedEventArgs.Processed = false;
+                await BotLogger.Error(
+                        nameof(OnInternalTradeOfferCanceled),
+                        "Event failed with message: {0}",
+                        e.Message
+                    )
+                    .ConfigureAwait(false);
+            }
         }
 
         private async void OnInternalTradeOfferChanged(
@@ -951,10 +1020,24 @@ namespace SDroid
                     "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
                     tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
                 .ConfigureAwait(false);
-            // ReSharper disable once PossibleNullReferenceException
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            await ((this as ITradeOfferBot)?.OnTradeOfferChanged(tradeOfferStateChangedEventArgs.TradeOffer))
-                .ConfigureAwait(false);
+
+            try
+            {
+                // ReSharper disable once PossibleNullReferenceException
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                await ((this as ITradeOfferBot)?.OnTradeOfferChanged(tradeOfferStateChangedEventArgs.TradeOffer))
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                tradeOfferStateChangedEventArgs.Processed = false;
+                await BotLogger.Error(
+                        nameof(OnInternalTradeOfferChanged),
+                        "Event failed with message: {0}",
+                        e.Message
+                    )
+                    .ConfigureAwait(false);
+            }
         }
 
         private async void OnInternalTradeOfferNeedsConfirmation(
@@ -965,10 +1048,24 @@ namespace SDroid
                     "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
                     tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
                 .ConfigureAwait(false);
-            // ReSharper disable once PossibleNullReferenceException
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            await ((this as ITradeOfferBot)?.OnTradeOfferNeedsConfirmation(tradeOfferStateChangedEventArgs
-                .TradeOffer)).ConfigureAwait(false);
+
+            try
+            {
+                // ReSharper disable once PossibleNullReferenceException
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                await ((this as ITradeOfferBot)?.OnTradeOfferNeedsConfirmation(tradeOfferStateChangedEventArgs
+                    .TradeOffer)).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                tradeOfferStateChangedEventArgs.Processed = false;
+                await BotLogger.Error(
+                        nameof(OnInternalTradeOfferNeedsConfirmation),
+                        "Event failed with message: {0}",
+                        e.Message
+                    )
+                    .ConfigureAwait(false);
+            }
         }
 
         private async void OnInternalTradeOfferReceived(
@@ -979,10 +1076,24 @@ namespace SDroid
                     "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
                     tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
                 .ConfigureAwait(false);
-            // ReSharper disable once PossibleNullReferenceException
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            await ((this as ITradeOfferBot)?.OnTradeOfferReceived(tradeOfferStateChangedEventArgs.TradeOffer))
-                .ConfigureAwait(false);
+
+            try
+            {
+                // ReSharper disable once PossibleNullReferenceException
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                await ((this as ITradeOfferBot)?.OnTradeOfferReceived(tradeOfferStateChangedEventArgs.TradeOffer))
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                tradeOfferStateChangedEventArgs.Processed = false;
+                await BotLogger.Error(
+                        nameof(OnInternalTradeOfferReceived),
+                        "Event failed with message: {0}",
+                        e.Message
+                    )
+                    .ConfigureAwait(false);
+            }
         }
 
         private async void OnInternalTradeOfferSent(
@@ -993,10 +1104,24 @@ namespace SDroid
                     "TradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId = `{0}`",
                     tradeOfferStateChangedEventArgs.TradeOffer.TradeOfferId)
                 .ConfigureAwait(false);
-            // ReSharper disable once PossibleNullReferenceException
-            // ReSharper disable once SuspiciousTypeConversion.Global
-            await ((this as ITradeOfferBot)?.OnTradeOfferSent(tradeOfferStateChangedEventArgs.TradeOffer))
-                .ConfigureAwait(false);
+
+            try
+            {
+                // ReSharper disable once PossibleNullReferenceException
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                await ((this as ITradeOfferBot)?.OnTradeOfferSent(tradeOfferStateChangedEventArgs.TradeOffer))
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                tradeOfferStateChangedEventArgs.Processed = false;
+                await BotLogger.Error(
+                        nameof(OnInternalTradeOfferSent),
+                        "Event failed with message: {0}",
+                        e.Message
+                    )
+                    .ConfigureAwait(false);
+            }
         }
     }
 }

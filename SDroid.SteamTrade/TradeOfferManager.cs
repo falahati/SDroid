@@ -906,15 +906,115 @@ namespace SDroid.SteamTrade
             return false;
         }
 
-        protected virtual void OnTradeOfferNeedsConfirmation(TradeOfferStateChangedEventArgs eventArgs)
+        protected virtual bool OnTradeOfferAccepted(TradeOfferStateChangedEventArgs eventArgs)
+        {
+            try
+            {
+                TradeOfferAccepted?.Invoke(this, eventArgs);
+
+                return eventArgs.Processed;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        protected virtual bool OnTradeOfferCanceled(TradeOfferStateChangedEventArgs eventArgs)
+        {
+            try
+            {
+                TradeOfferCanceled?.Invoke(this, eventArgs);
+
+                return eventArgs.Processed;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        protected virtual bool OnTradeOfferChanged(TradeOfferStateChangedEventArgs eventArgs)
+        {
+            try
+            {
+                TradeOfferChanged?.Invoke(this, eventArgs);
+
+                return eventArgs.Processed;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        protected virtual bool OnTradeOfferDeclined(TradeOfferStateChangedEventArgs eventArgs)
+        {
+            try
+            {
+                TradeOfferDeclined?.Invoke(this, eventArgs);
+
+                return eventArgs.Processed;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        protected virtual bool OnTradeOfferInEscrow(TradeOfferStateChangedEventArgs eventArgs)
+        {
+            try
+            {
+                TradeOfferInEscrow?.Invoke(this, eventArgs);
+
+                return eventArgs.Processed;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        protected virtual bool OnTradeOfferNeedsConfirmation(TradeOfferStateChangedEventArgs eventArgs)
         {
             try
             {
                 TradeOfferNeedsConfirmation?.Invoke(this, eventArgs);
+
+                return eventArgs.Processed;
             }
-            catch (Exception)
+            catch
             {
-                // ignored
+                return false;
+            }
+        }
+
+        protected virtual bool OnTradeOfferReceived(TradeOfferStateChangedEventArgs eventArgs)
+        {
+            try
+            {
+                TradeOfferReceived?.Invoke(this, eventArgs);
+
+                return eventArgs.Processed;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        protected virtual bool OnTradeOfferSent(TradeOfferStateChangedEventArgs eventArgs)
+        {
+            try
+            {
+                TradeOfferSent?.Invoke(this, eventArgs);
+
+                return eventArgs.Processed;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -959,7 +1059,14 @@ namespace SDroid.SteamTrade
             }
             finally
             {
-                _timer.Change(_tradeOfferOptions.PollInterval, TimeSpan.FromMilliseconds(-1));
+                try
+                {
+                    _timer.Change(_tradeOfferOptions.PollInterval, TimeSpan.FromMilliseconds(-1));
+                }
+                catch
+                {
+                    // ignored
+                }
             }
         }
 
@@ -995,19 +1102,21 @@ namespace SDroid.SteamTrade
 
                     lock (_knownTradeOffers)
                     {
-                        if (_knownTradeOffers.ContainsKey(offerId) &&
-                            _knownTradeOffers[offerId] == offer.Status)
+                        if (_knownTradeOffers.ContainsKey(offerId))
                         {
-                            continue;
+                            if (_knownTradeOffers[offerId] == offer.Status)
+                            {
+                                continue;
+                            }
+
+                            _knownTradeOffers.Remove(offerId);
                         }
                     }
 
-                    lock (_knownTradeOffers)
+                    if (!OnTradeOfferChanged(new TradeOfferStateChangedEventArgs(offer)))
                     {
-                        _knownTradeOffers[offerId] = offer.Status;
+                        return;
                     }
-
-                    OnTradeOfferChanged(new TradeOfferStateChangedEventArgs(offer));
 
                     switch (offer.Status)
                     {
@@ -1015,51 +1124,87 @@ namespace SDroid.SteamTrade
 
                             if (offer.IsOurOffer)
                             {
-                                OnTradeOfferSent(new TradeOfferStateChangedEventArgs(offer));
+                                if (!OnTradeOfferSent(new TradeOfferStateChangedEventArgs(offer)))
+                                {
+                                    return;
+                                }
                             }
                             else
                             {
-                                OnTradeOfferReceived(new TradeOfferStateChangedEventArgs(offer));
+                                if (!OnTradeOfferReceived(new TradeOfferStateChangedEventArgs(offer)))
+                                {
+                                    return;
+                                }
                             }
 
                             break;
                         case TradeOfferStatus.Accepted:
-                            OnTradeOfferAccepted(new TradeOfferStateChangedEventArgs(offer));
+                            if (!OnTradeOfferAccepted(new TradeOfferStateChangedEventArgs(offer)))
+                            {
+                                return;
+                            }
 
                             break;
                         case TradeOfferStatus.Expired:
 
                             if (offer.IsOurOffer)
                             {
-                                OnTradeOfferCanceled(new TradeOfferStateChangedEventArgs(offer));
+                                if (!OnTradeOfferCanceled(new TradeOfferStateChangedEventArgs(offer)))
+                                {
+                                    return;
+                                }
                             }
                             else
                             {
-                                OnTradeOfferDeclined(new TradeOfferStateChangedEventArgs(offer));
+                                if (!OnTradeOfferDeclined(new TradeOfferStateChangedEventArgs(offer)))
+                                {
+                                    return;
+                                }
                             }
 
                             break;
                         case TradeOfferStatus.Canceled:
-                            OnTradeOfferCanceled(new TradeOfferStateChangedEventArgs(offer));
+                            if (!OnTradeOfferCanceled(new TradeOfferStateChangedEventArgs(offer)))
+                            {
+                                return;
+                            }
 
                             break;
                         case TradeOfferStatus.Countered:
                         case TradeOfferStatus.Declined:
-                            OnTradeOfferDeclined(new TradeOfferStateChangedEventArgs(offer));
+                            if (!OnTradeOfferDeclined(new TradeOfferStateChangedEventArgs(offer)))
+                            {
+                                return;
+                            }
 
                             break;
                         case TradeOfferStatus.NeedsConfirmation:
-                            OnTradeOfferNeedsConfirmation(new TradeOfferStateChangedEventArgs(offer));
+                            if (!OnTradeOfferNeedsConfirmation(new TradeOfferStateChangedEventArgs(offer)))
+                            {
+                                return;
+                            }
 
                             break;
                         case TradeOfferStatus.CanceledBySecondFactor:
-                            OnTradeOfferCanceled(new TradeOfferStateChangedEventArgs(offer));
+                            if (!OnTradeOfferCanceled(new TradeOfferStateChangedEventArgs(offer)))
+                            {
+                                return;
+                            }
 
                             break;
                         case TradeOfferStatus.InEscrow:
-                            OnTradeOfferInEscrow(new TradeOfferStateChangedEventArgs(offer));
+
+                            if (!OnTradeOfferInEscrow(new TradeOfferStateChangedEventArgs(offer)))
+                            {
+                                return;
+                            }
 
                             break;
+                    }
+
+                    lock (_knownTradeOffers)
+                    {
+                        _knownTradeOffers[offerId] = offer.Status;
                     }
                 }
                 catch (Exception)
@@ -1071,90 +1216,6 @@ namespace SDroid.SteamTrade
             lock (_timer)
             {
                 _isHandlingTradeOffers = false;
-            }
-        }
-
-        private void OnTradeOfferAccepted(TradeOfferStateChangedEventArgs eventArgs)
-        {
-            try
-            {
-                TradeOfferAccepted?.Invoke(this, eventArgs);
-            }
-            catch (Exception)
-            {
-                // ignored
-            }
-        }
-
-        private void OnTradeOfferCanceled(TradeOfferStateChangedEventArgs eventArgs)
-        {
-            try
-            {
-                TradeOfferCanceled?.Invoke(this, eventArgs);
-            }
-            catch (Exception)
-            {
-                // ignored
-            }
-        }
-
-        private void OnTradeOfferChanged(TradeOfferStateChangedEventArgs eventArgs)
-        {
-            try
-            {
-                TradeOfferChanged?.Invoke(this, eventArgs);
-            }
-            catch (Exception)
-            {
-                // ignored
-            }
-        }
-
-        private void OnTradeOfferDeclined(TradeOfferStateChangedEventArgs eventArgs)
-        {
-            try
-            {
-                TradeOfferDeclined?.Invoke(this, eventArgs);
-            }
-            catch (Exception)
-            {
-                // ignored
-            }
-        }
-
-        private void OnTradeOfferInEscrow(TradeOfferStateChangedEventArgs eventArgs)
-        {
-            try
-            {
-                TradeOfferInEscrow?.Invoke(this, eventArgs);
-            }
-            catch (Exception)
-            {
-                // ignored
-            }
-        }
-
-        private void OnTradeOfferReceived(TradeOfferStateChangedEventArgs eventArgs)
-        {
-            try
-            {
-                TradeOfferReceived?.Invoke(this, eventArgs);
-            }
-            catch (Exception)
-            {
-                // ignored
-            }
-        }
-
-        private void OnTradeOfferSent(TradeOfferStateChangedEventArgs eventArgs)
-        {
-            try
-            {
-                TradeOfferSent?.Invoke(this, eventArgs);
-            }
-            catch (Exception)
-            {
-                // ignored
             }
         }
     }

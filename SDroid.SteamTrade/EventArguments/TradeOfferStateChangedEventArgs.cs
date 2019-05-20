@@ -10,5 +10,6 @@ namespace SDroid.SteamTrade.EventArguments
         }
 
         public TradeOffer TradeOffer { get; }
+        public bool Processed { get; set; } = true;
     }
 }
