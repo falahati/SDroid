@@ -8,7 +8,7 @@ and managing the Steam Account they are connected to.
 
 Based on [geel9's SteamAuth](https://github.com/geel9/SteamAuth) and [Jessecar96's SteamBot](https://github.com/Jessecar96/SteamBot) projects.
 
-## Componenets
+## Components
 ### SDroid.SteamWeb
 [![](https://img.shields.io/nuget/dt/SDroid.SteamWeb.svg?style=flat-square)](https://www.nuget.org/packages/SDroid.SteamWeb)
 [![](https://img.shields.io/nuget/v/SDroid.SteamWeb.svg?style=flat-square)](https://www.nuget.org/packages/SDroid.SteamWeb)
