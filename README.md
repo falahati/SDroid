@@ -4,7 +4,7 @@
 [![](https://img.shields.io/github/issues/falahati/SDroid.svg?style=flat-square)](https://github.com/falahati/SDroid/issues)
 
 **SDroid** is a framework for designing and running custom bots for Steam network capable of trading 
-and managing the Steam Account they are connected to. 
+and managing the Steam Account they are connected to.
 
 Based on [geel9's SteamAuth](https://github.com/geel9/SteamAuth) and [Jessecar96's SteamBot](https://github.com/Jessecar96/SteamBot) projects.
 
@@ -51,12 +51,11 @@ sample bots developed with it.
 
 This library is available as a NuGet package [here](https://www.nuget.org/packages/SDroid).
 
-## Donation
-Donations assist development and are greatly appreciated; also always remember that [every coffee counts!](https://media.makeameme.org/created/one-simply-does-i9k8kx.jpg) :)
+## Help me fund my own Death Star
 
-[![](https://img.shields.io/badge/fiat-PayPal-8a00a3.svg?style=flat-square)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=WR3KK2B6TYYQ4&item_name=Donation&currency_code=USD&source=url)
 [![](https://img.shields.io/badge/crypto-CoinPayments-8a00a3.svg?style=flat-square)](https://www.coinpayments.net/index.php?cmd=_donate&reset=1&merchant=820707aded07845511b841f9c4c335cd&item_name=Donate&currency=USD&amountf=20.00000000&allow_amount=1&want_shipping=0&allow_extra=1)
 [![](https://img.shields.io/badge/shetab-ZarinPal-8a00a3.svg?style=flat-square)](https://zarinp.al/@falahati)
+[![](https://img.shields.io/badge/usd-Paypal-8a00a3.svg?style=flat-square)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=ramin.graphix@gmail.com&lc=US&item_name=Donate&no_note=0&cn=&curency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted)
 
 **--OR--**
 
@@ -144,7 +143,7 @@ SOFTWARE.
 ## License
 The MIT License (MIT)
 
-Copyright (c) 2018 Soroush Falahati
+Copyright (c) 2018-2020 Soroush Falahati
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -155,4 +154,3 @@ furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
-
