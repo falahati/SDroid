@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using SDroid.SteamWeb;
 
@@ -45,10 +46,11 @@ namespace SDroid.SteamMobile
         /// <inheritdoc />
         protected override async Task<HttpWebRequest> MakeRequest(
             string url,
-            string postDataString,
-            SteamWebAccessRequest accessRequest)
+            byte[] body,
+            SteamWebAccessRequest accessRequest
+        )
         {
-            var webRequest = await base.MakeRequest(url, postDataString, accessRequest).ConfigureAwait(false);
+            var webRequest = await base.MakeRequest(url, body, accessRequest).ConfigureAwait(false);
             webRequest.UserAgent = ClientUserAgent;
 
             if (!webRequest.Headers.AllKeys.Contains("X-Requested-With"))

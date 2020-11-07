@@ -39,22 +39,28 @@ namespace SDroid.SteamKit
             {
                 using (var steamUserAuth = WebAPI.GetAsyncInterface("ISteamUserAuth"))
                 {
-                    var result = await steamUserAuth.CallAsync(HttpMethod.Post, "AuthenticateUser", 1,
-                        new Dictionary<string, string>
+                    var result = await steamUserAuth.CallAsync(
+                        HttpMethod.Post,
+                        "AuthenticateUser", 1,
+                        new Dictionary<string, object>
                         {
                             {"steamid", client.SteamID.ConvertToUInt64().ToString()},
                             {"sessionkey", HttpUtility.UrlEncode(cryptedSessionKey)},
                             {"encrypted_loginkey", HttpUtility.UrlEncode(cryptedLoginKey)}
-                        }).ConfigureAwait(false);
+                        }
+                    ).ConfigureAwait(false);
 
                     return new WebSession(
-                        client.SteamID.ConvertToUInt64(), 
-                        result["token"]?.Value?.ToUpper(), 
+                        client.SteamID.ConvertToUInt64(),
+                        result["token"]?.Value?.ToUpper(),
                         result["tokensecure"]?.Value?.ToUpper(),
-                        sessionId, null, null);
+                        sessionId,
+                        null,
+                        null
+                    );
                 }
             }
-            catch
+            catch (Exception e)
             {
                 return null;
             }

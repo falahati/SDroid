@@ -28,7 +28,7 @@ namespace SDroid.SteamMobile
                     {"oauth_scope", ClientOAuthScope}
                 };
 
-                request.Data = oAuthArguments.Concat(request.Data);
+                request.FormData = oAuthArguments.Concat(request.FormData);
                 request.Referer = oAuthArguments.AppendToUrl(MobileLoginUrl);
             }
 

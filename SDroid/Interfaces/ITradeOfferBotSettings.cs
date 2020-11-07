@@ -4,6 +4,6 @@ namespace SDroid.Interfaces
 {
     public interface ITradeOfferBotSettings : IBotSettingsBase
     {
-        TradeOfferOptions TradeOfferOptions { get; set; }
+        TradeOfferOptions TradeOfferOptions { get; }
     }
 }

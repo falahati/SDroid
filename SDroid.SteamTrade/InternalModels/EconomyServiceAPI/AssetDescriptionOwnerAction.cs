@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using SDroid.SteamTrade.Models.UserInventory;
 
 namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
 {
@@ -8,6 +9,11 @@ namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
         public string Link { get; set; }
 
         [JsonProperty("name")]
-        public string Name { get; set; }
+        public string Title { get; set; }
+
+        public UserInventoryAssetDescriptionAction ToUserInventoryAssetDescriptionAction()
+        {
+            return new UserInventoryAssetDescriptionAction(Title, Link);
+        }
     }
 }

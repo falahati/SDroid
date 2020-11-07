@@ -11,7 +11,8 @@ namespace SDroid.SteamTrade.Models.UserInventory
             long assetId,
             long classId,
             long instanceId,
-            long amount = 1) : base(appId, contextId, assetId, amount)
+            long amount = 1
+        ) : base(appId, contextId, assetId, amount)
         {
             ClassId = classId;
             InstanceId = instanceId;

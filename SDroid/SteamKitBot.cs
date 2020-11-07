@@ -116,7 +116,7 @@ namespace SDroid
 
         public override async Task StartBot()
         {
-            lock (this)
+            lock (LocalLock)
             {
                 if (BotStatus != SteamBotStatus.Ready)
                 {
@@ -150,7 +150,7 @@ namespace SDroid
         /// <inheritdoc />
         protected override async Task BotLogin()
         {
-            lock (this)
+            lock (LocalLock)
             {
                 if (BotStatus == SteamBotStatus.LoggingIn)
                 {
@@ -172,7 +172,7 @@ namespace SDroid
         {
             try
             {
-                lock (this)
+                lock (LocalLock)
                 {
                     if (BotStatus != SteamBotStatus.Running || WebAccess == null)
                     {
@@ -216,7 +216,7 @@ namespace SDroid
 
         protected virtual void OnStalledLoginCheck()
         {
-            lock (this)
+            lock (LocalLock)
             {
                 if (BotStatus != SteamBotStatus.LoggingIn)
                 {
@@ -238,7 +238,7 @@ namespace SDroid
             await LoginBackoff.Delay().ConfigureAwait(false);
             await OnLoggingIn().ConfigureAwait(false);
 
-            lock (this)
+            lock (LocalLock)
             {
                 StalledLoginCheckTimer?.Dispose();
                 StalledLoginCheckTimer = new Timer(state => OnStalledLoginCheck(), null,
@@ -289,7 +289,7 @@ namespace SDroid
             BotLogger.Debug(nameof(OnInternalSteamClientConnected), "Connected to the steam network.");
             ConnectionBackoff.Reset();
 
-            lock (this)
+            lock (LocalLock)
             {
                 BotStatus = SteamBotStatus.Connected;
             }
@@ -305,7 +305,7 @@ namespace SDroid
 
             if (!disconnectedCallback.UserInitiated)
             {
-                lock (this)
+                lock (LocalLock)
                 {
                     if (BotStatus == SteamBotStatus.Faulted)
                     {
@@ -332,7 +332,7 @@ namespace SDroid
             BotLogger.Debug(nameof(OnInternalSteamUserLoggedOff), "SteamUser.LoggedOffCallback.Result = `{0}`",
                 loggedOffCallback.Result);
 
-            lock (this)
+            lock (LocalLock)
             {
                 if (BotStatus == SteamBotStatus.Faulted)
                 {
@@ -370,11 +370,91 @@ namespace SDroid
             }
         }
 
+        private async Task<bool> RecoverWebSession()
+        {
+            try
+            {
+                // Check if the current session is still valid
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                if (WebAccess != null)
+                {
+                    await BotLogger.Debug(nameof(RecoverWebSession), "Trying current session.").ConfigureAwait(false);
+
+                    if (await WebAccess.VerifySession().ConfigureAwait(false))
+                    {
+                        await BotLogger.Debug(nameof(RecoverWebSession), "Session is valid.").ConfigureAwait(false);
+                        await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
+
+                        return true;
+                    }
+                }
+
+                // Check if the bot's authenticator holds a valid session or a session that can be extended
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                if (this is IAuthenticatorBot authenticatorController)
+                {
+                    await BotLogger.Debug(nameof(RecoverWebSession), "Trying authenticator session.").ConfigureAwait(false);
+
+                    if (authenticatorController.BotAuthenticatorSettings?.Authenticator?.Session != null)
+                    {
+                        var webAccess = new SteamMobileWebAccess(
+                            authenticatorController.BotAuthenticatorSettings.Authenticator.Session,
+                            IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress)
+                                ? ipAddress
+                                : IPAddress.Any,
+                            string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy));
+
+                        await BotLogger.Debug(nameof(RecoverWebSession), "Refreshing authenticator session.")
+                            .ConfigureAwait(false);
+
+                        if (await
+                            authenticatorController.BotAuthenticatorSettings.Authenticator.Session
+                                .RefreshSession(webAccess)
+                                .ConfigureAwait(false))
+                        {
+                            if (await webAccess.VerifySession().ConfigureAwait(false))
+                            {
+                                await BotLogger.Debug(nameof(RecoverWebSession), "Session is valid.").ConfigureAwait(false);
+                                WebAccess = webAccess;
+                                await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
+
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                if (BotSettings.Session != null && BotSettings.Session.HasEnoughInfo() && WebAccess == null)
+                {
+                    await BotLogger.Debug(nameof(RecoverWebSession), "Trying last saved session.").ConfigureAwait(false);
+                    var webAccess = new SteamWebAccess(
+                        BotSettings.Session,
+                        IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress) ? ipAddress : IPAddress.Any,
+                        string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy));
+
+                    if (await webAccess.VerifySession().ConfigureAwait(false))
+                    {
+                        await BotLogger.Debug(nameof(RecoverWebSession), "Session is valid.").ConfigureAwait(false);
+                        WebAccess = webAccess;
+                        await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
+
+                        return true;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                await BotLogger.Error(nameof(RecoverWebSession), "Failed to recover WebSession, error: {0}", e.Message);
+            }
+
+            return false;
+        }
+
         // ReSharper disable once MethodTooLong
         // ReSharper disable once ExcessiveIndentation
         private void OnInternalSteamUserLoggedOn(SteamUser.LoggedOnCallback loggedOnCallback)
         {
-            lock (this)
+            lock (LocalLock)
             {
                 if (BotStatus != SteamBotStatus.LoggingIn)
                 {
@@ -416,7 +496,16 @@ namespace SDroid
                 {
                     BotLogger.Debug(nameof(OnInternalSteamUserLoggedOn),
                         "Failed to retrieve WebAccess session. Forcefully starting a new login process.");
-                    InternalInitializeLogin().Wait();
+                    //
+
+                    if (RecoverWebSession().Result)
+                    {
+                        LoginBackoff.Reset();
+                    }
+                    else
+                    {
+                        InternalInitializeLogin().Wait();
+                    }
                 }
 
                 return;

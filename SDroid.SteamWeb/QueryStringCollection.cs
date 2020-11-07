@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Web;
 
 namespace SDroid.SteamWeb
@@ -49,9 +51,16 @@ namespace SDroid.SteamWeb
         /// </returns>
         public override string ToString()
         {
-            return string.Join("&",
-                this.Select(kvp =>
-                    string.Concat(Uri.EscapeDataString(kvp.Key), "=", Uri.EscapeDataString(ValueToString(kvp.Value)))));
+            return string.Join(
+                "&",
+                this.Select(
+                    kvp => string.Concat(
+                        Uri.EscapeDataString(kvp.Key),
+                        "=",
+                        Uri.EscapeDataString(ValueToString(kvp.Value))
+                    )
+                )
+            );
         }
 
         /// <summary>
@@ -75,6 +84,25 @@ namespace SDroid.SteamWeb
             return baseUrl + (baseUrl.Contains("?") ? "&" : "?") + ToString();
         }
 
+        public MultipartFormDataContent ToMultipartFormDataContent()
+        {
+            var form = new MultipartFormDataContent();
+
+            foreach (var part in this)
+            {
+                if (part.Value is bool boolVal)
+                {
+                    form.Add(new StringContent((boolVal ? 1 : 0).ToString(), Encoding.UTF8), part.Key);
+                } else if (part.Value is byte[] byteArray) {
+                    form.Add(new ByteArrayContent(byteArray), part.Key);
+                } else {
+                    form.Add(new StringContent(part.Value.ToString(), Encoding.UTF8), part.Key);
+                }
+            }
+
+            return form;
+        }
+
         /// <summary>
         ///     Creates a new instance containing the values of this instance and a new instance.
         /// </summary>
@@ -94,7 +122,6 @@ namespace SDroid.SteamWeb
 
             if (value is byte[] byteArray)
             {
-                //return Convert.ToBase64String(byteArray);
                 return HttpUtility.UrlEncode(byteArray);
             }
 

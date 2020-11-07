@@ -10,6 +10,7 @@ namespace SDroid.SteamTrade.Helpers
     {
         private static DiskCache _default = new DiskCache();
         private readonly DirectoryInfo _directory;
+        private readonly object _localLock = new object();
 
         public DiskCache() : this(new DirectoryInfo(Path.GetTempPath()))
         {
@@ -30,7 +31,7 @@ namespace SDroid.SteamTrade.Helpers
         {
             try
             {
-                lock (this)
+                lock (_localLock)
                 {
                     var fileName = GetFileName(name);
 
@@ -57,7 +58,7 @@ namespace SDroid.SteamTrade.Helpers
                 return GetCached<T>(name);
             }
 
-            validityChecker = validityChecker ?? (r => !EqualityComparer<T>.Default.Equals(r, default(T)));
+            validityChecker = validityChecker ?? (r => !EqualityComparer<T>.Default.Equals(r, default));
 
             var result = action();
 
@@ -78,7 +79,7 @@ namespace SDroid.SteamTrade.Helpers
             Func<T, Task<bool>> validityChecker = null)
         {
             validityChecker = validityChecker ??
-                              (r => Task.FromResult(!EqualityComparer<T>.Default.Equals(r, default(T))));
+                              (r => Task.FromResult(!EqualityComparer<T>.Default.Equals(r, default)));
 
             if (IsValid(name, maxAge))
             {
@@ -99,7 +100,7 @@ namespace SDroid.SteamTrade.Helpers
         {
             try
             {
-                lock (this)
+                lock (_localLock)
                 {
                     var fileName = GetFileName(name);
 
@@ -123,7 +124,7 @@ namespace SDroid.SteamTrade.Helpers
         {
             try
             {
-                lock (this)
+                lock (_localLock)
                 {
                     var fileName = GetFileName(name);
 
@@ -145,7 +146,7 @@ namespace SDroid.SteamTrade.Helpers
         {
             try
             {
-                lock (this)
+                lock (_localLock)
                 {
                     var fileName = GetFileName(name);
                     var json = File.ReadAllText(fileName);
@@ -155,11 +156,11 @@ namespace SDroid.SteamTrade.Helpers
             }
             catch (Exception)
             {
-                return default(T);
+                return default;
             }
         }
 
-        public bool IsValid(string name, TimeSpan maxAge = default(TimeSpan))
+        public bool IsValid(string name, TimeSpan maxAge = default)
         {
             try
             {
@@ -170,7 +171,7 @@ namespace SDroid.SteamTrade.Helpers
                     return false;
                 }
 
-                if (maxAge == default(TimeSpan))
+                if (maxAge == default)
                 {
                     return true;
                 }
@@ -187,7 +188,7 @@ namespace SDroid.SteamTrade.Helpers
         {
             try
             {
-                lock (this)
+                lock (_localLock)
                 {
                     var fileName = GetFileName(name);
                     var json = JsonConvert.SerializeObject(obj);

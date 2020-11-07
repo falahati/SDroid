@@ -21,14 +21,14 @@ namespace SDroid.SteamTrade.Models.UserInventory
 
         public uint? DefinitionIndex
         {
-            get => _appData.ContainsKey("def_index") && uint.TryParse(_appData["def_index"], out var defIndex)
+            get => _appData?.ContainsKey("def_index") == true && uint.TryParse(_appData["def_index"], out var defIndex)
                 ? defIndex
                 : (uint?) null;
         }
 
         public bool IsItemSetName
         {
-            get => _appData.ContainsKey("is_itemset_name") && _appData["is_itemset_name"] == "1";
+            get => _appData?.ContainsKey("is_itemset_name") == true && _appData["is_itemset_name"] == "1";
         }
 
         public string Type { get; }

@@ -20,8 +20,7 @@ namespace SDroid.SteamTrade
                 throw new ArgumentException("TradeOfferId is missing or invalid.");
             }
 
-            _descriptions = descriptions?.Select(description => description.ToSteamAssetDescription()).Distinct()
-                .ToArray();
+            _descriptions = descriptions?.Select(description => description.ToSteamAssetDescription()).Distinct().ToArray();
 
             var ourAssets = new List<TradeOfferAsset>();
             var theirAssets = new List<TradeOfferAsset>();

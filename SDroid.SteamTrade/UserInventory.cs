@@ -378,8 +378,9 @@ namespace SDroid.SteamTrade
                 if (appContext == null)
                 {
                     appContext = new UserInventoryAppContext(asset.ContextId);
-                    inventoryApp.Update(new UserInventoryApp(inventoryApp.AppId, null, null, new[] {appContext}, null,
-                        null, null));
+                    inventoryApp.Update(
+                        new UserInventoryApp(inventoryApp.AppId, null, null, new[] {appContext}, null, null, null)
+                    );
                 }
             }
 

@@ -3,6 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Cache;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -95,29 +97,39 @@ namespace SDroid.SteamWeb
             try
             {
                 var url = accessRequest.Url;
-                string postDataString = null;
-
-                if (accessRequest.Data != null &&
-                    accessRequest.Data.Count > 0)
+                byte[] postData = null;
+                if (accessRequest.FormData != null &&
+                    accessRequest.FormData.Count > 0)
                 {
                     if (accessRequest.Method == SteamWebAccessRequestMethod.Post)
                     {
-                        postDataString = accessRequest.Data.ToString();
+                        if (accessRequest.IsUpload)
+                        {
+                            postData = await accessRequest.FormData.ToMultipartFormDataContent().ReadAsByteArrayAsync();
+                        }
+                        else
+                        {
+                            postData = Encoding.UTF8.GetBytes(accessRequest.FormData.ToString());
+                        }
                     }
                     else
                     {
-                        url = accessRequest.Data.AppendToUrl(url);
+                        url = accessRequest.FormData.AppendToUrl(url);
                     }
                 }
 
-                webRequest = await MakeRequest(url, postDataString, accessRequest).ConfigureAwait(false);
+                webRequest = await MakeRequest(url, postData, accessRequest).ConfigureAwait(false);
 
                 if (webRequest == null)
                 {
                     return new MemoryStream();
                 }
 
-                await WriteRequest(webRequest, postDataString, accessRequest).ConfigureAwait(false);
+                await WriteRequest(
+                    webRequest,
+                    postData,
+                    accessRequest
+                ).ConfigureAwait(false);
 
                 webResponse = (HttpWebResponse) await webRequest.GetResponseAsync().ConfigureAwait(false);
             }
@@ -246,8 +258,9 @@ namespace SDroid.SteamWeb
 
         protected virtual Task<HttpWebRequest> MakeRequest(
             string url,
-            string postDataString,
-            SteamWebAccessRequest accessRequest)
+            byte[] body,
+            SteamWebAccessRequest accessRequest
+        )
         {
             var webRequest = (HttpWebRequest) WebRequest.Create(url);
             webRequest.Method = accessRequest.Method == SteamWebAccessRequestMethod.Post ? "POST" : "GET";
@@ -259,7 +272,6 @@ namespace SDroid.SteamWeb
             webRequest.KeepAlive = false;
             webRequest.CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.Revalidate);
             webRequest.Headers[HttpRequestHeader.AcceptLanguage] = "en, en-us;q=0.9, en-gb;q=0.8";
-
             if (IPAddress != null &&
                 !IPAddress.Equals(IPAddress.Any) &&
                 IPAddress.Equals(IPAddress.IPv6Any) &&
@@ -290,10 +302,10 @@ namespace SDroid.SteamWeb
                 webRequest.CookieContainer = Session;
             }
 
-            if (!string.IsNullOrWhiteSpace(postDataString))
+            if (body != null)
             {
-                webRequest.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
-                webRequest.ContentLength = postDataString.Length;
+                webRequest.ContentLength = body.Length;
+                webRequest.ContentType = accessRequest.IsUpload ? "multipart/form-data" : "application/x-www-form-urlencoded";
             }
 
             return Task.FromResult(webRequest);
@@ -361,18 +373,15 @@ namespace SDroid.SteamWeb
 
         protected virtual async Task WriteRequest(
             HttpWebRequest webRequest,
-            string postDataString,
+            byte[] body,
             SteamWebAccessRequest accessRequest)
         {
-            if (!string.IsNullOrWhiteSpace(postDataString))
+            if (body != null)
             {
                 using (var requestStream = await webRequest.GetRequestStreamAsync().ConfigureAwait(false))
                 {
-                    using (var requestWriter = new StreamWriter(requestStream))
-                    {
-                        await requestWriter.WriteAsync(postDataString).ConfigureAwait(false);
-                        requestWriter.Close();
-                    }
+                    await requestStream.WriteAsync(body, 0, body.Length);
+                    requestStream.Close();
                 }
             }
         }

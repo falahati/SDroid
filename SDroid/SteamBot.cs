@@ -20,7 +20,9 @@ namespace SDroid
     // ReSharper disable once ClassTooBig
     public abstract class SteamBot : ISteamBot
     {
+        protected readonly object LocalLock = new object();
         protected readonly SemaphoreSlim WebSessionLock = new SemaphoreSlim(1, 1);
+        private SteamBotStatus _botStatus;
         protected Timer AuthenticatorConfirmationTimer;
         protected CancellationTokenSource CancellationTokenSource;
         protected List<Confirmation> FetchedConfirmations = new List<Confirmation>();
@@ -34,10 +36,17 @@ namespace SDroid
         }
 
         protected IBotLogger BotLogger { get; set; }
-
         protected IBotSettings BotSettings { get; set; }
 
-        protected SteamBotStatus BotStatus { get; set; }
+        public SteamBotStatus BotStatus
+        {
+            get => _botStatus;
+            protected set
+            {
+                _botStatus = value;
+                OnStatusChanged();
+            }
+        }
 
         protected virtual SteamID SteamId
         {
@@ -110,7 +119,7 @@ namespace SDroid
 
         public virtual async Task StartBot()
         {
-            lock (this)
+            lock (LocalLock)
             {
                 if (BotStatus != SteamBotStatus.Ready)
                 {
@@ -127,7 +136,7 @@ namespace SDroid
 
         public virtual async Task StopBot()
         {
-            lock (this)
+            lock (LocalLock)
             {
                 if (BotStatus == SteamBotStatus.Ready)
                 {
@@ -146,7 +155,7 @@ namespace SDroid
 
             //while (true)
             //{
-            //    lock (this)
+            //    lock (this.LocalLock)
             //    {
             //        if (BotStatus == SteamBotStatus.Faulted)
             //        {
@@ -163,7 +172,7 @@ namespace SDroid
                 await BotLogger.Debug(nameof(StopBot), "Disposing ITradeOfferBot's TradeOfferManager.")
                     .ConfigureAwait(false);
 
-                lock (this)
+                lock (LocalLock)
                 {
                     offerController.TradeOfferManager?.Dispose();
                     offerController.TradeOfferManager = null;
@@ -175,7 +184,7 @@ namespace SDroid
             {
                 await BotLogger.Debug(nameof(StopBot), "Disposing ITradeBot's TradeManager.").ConfigureAwait(false);
 
-                lock (this)
+                lock (LocalLock)
                 {
                     tradeController.TradeManager?.Dispose();
                     tradeController.TradeManager = null;
@@ -184,7 +193,7 @@ namespace SDroid
 
             await BotLogger.Debug(nameof(StopBot), "Bot stopped.").ConfigureAwait(false);
 
-            lock (this)
+            lock (LocalLock)
             {
                 BotStatus = SteamBotStatus.Ready;
             }
@@ -195,7 +204,7 @@ namespace SDroid
         // ReSharper disable once ExcessiveIndentation
         protected virtual async Task BotLogin()
         {
-            lock (this)
+            lock (LocalLock)
             {
                 if (BotStatus == SteamBotStatus.LoggingIn)
                 {
@@ -224,25 +233,6 @@ namespace SDroid
                     }
                 }
 
-                // Check to see if we have a valid session saved
-                if (BotSettings.Session != null && BotSettings.Session.HasEnoughInfo() && WebAccess == null)
-                {
-                    await BotLogger.Debug(nameof(BotLogin), "Trying last saved session.").ConfigureAwait(false);
-                    var webAccess = new SteamWebAccess(
-                        BotSettings.Session,
-                        IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress) ? ipAddress : IPAddress.Any,
-                        string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy));
-
-                    if (await webAccess.VerifySession().ConfigureAwait(false))
-                    {
-                        await BotLogger.Debug(nameof(BotLogin), "Session is valid.").ConfigureAwait(false);
-                        WebAccess = webAccess;
-                        await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
-
-                        return;
-                    }
-                }
-
                 // Check if the bot's authenticator holds a valid session or a session that can be extended
                 var webLogin = new WebLogin();
 
@@ -253,6 +243,7 @@ namespace SDroid
 
                     await BotLogger.Debug(nameof(BotLogin), "Trying authenticator session.").ConfigureAwait(false);
 
+
                     if (authenticatorController.BotAuthenticatorSettings?.Authenticator?.Session != null)
                     {
                         var webAccess = new SteamMobileWebAccess(
@@ -261,15 +252,6 @@ namespace SDroid
                                 ? ipAddress
                                 : IPAddress.Any,
                             string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy));
-
-                        if (await webAccess.VerifySession().ConfigureAwait(false))
-                        {
-                            await BotLogger.Debug(nameof(BotLogin), "Session is valid.").ConfigureAwait(false);
-                            WebAccess = webAccess;
-                            await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
-
-                            return;
-                        }
 
                         await BotLogger.Debug(nameof(BotLogin), "Refreshing authenticator session.")
                             .ConfigureAwait(false);
@@ -288,6 +270,24 @@ namespace SDroid
                                 return;
                             }
                         }
+                    }
+                }
+
+                // Check to see if we have a valid session saved
+                if (BotSettings.Session != null && BotSettings.Session.HasEnoughInfo() && WebAccess == null) {
+                    await BotLogger.Debug(nameof(BotLogin), "Trying last saved session.").ConfigureAwait(false);
+                    var webAccess = new SteamWebAccess(
+                        BotSettings.Session,
+                        IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress) ? ipAddress : IPAddress.Any,
+                        string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy));
+
+                    if (await webAccess.VerifySession().ConfigureAwait(false))
+                    {
+                        await BotLogger.Debug(nameof(BotLogin), "Session is valid.").ConfigureAwait(false);
+                        WebAccess = webAccess;
+                        await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
+
+                        return;
                     }
                 }
 
@@ -446,7 +446,7 @@ namespace SDroid
             {
                 try
                 {
-                    lock (this)
+                    lock (LocalLock)
                     {
                         if (BotStatus != SteamBotStatus.Running ||
                             authenticatorBot.BotAuthenticatorSettings.Authenticator == null)
@@ -534,7 +534,7 @@ namespace SDroid
         {
             try
             {
-                lock (this)
+                lock (LocalLock)
                 {
                     if (BotStatus != SteamBotStatus.Running || WebAccess == null)
                     {
@@ -677,9 +677,9 @@ namespace SDroid
                                 var domainName =
                                     !string.IsNullOrWhiteSpace(BotSettings.DomainName)
                                         ? BotSettings.DomainName
-                                        : ((await (WebAccess ?? SteamWebAccess.GetGuest()).GetActualIPAddress()
-                                               .ConfigureAwait(false))?.ToString() ??
-                                           "example.com");
+                                        : (await (WebAccess ?? SteamWebAccess.GetGuest()).GetActualIPAddress()
+                                              .ConfigureAwait(false))?.ToString() ??
+                                          "example.com";
 
                                 await BotLogger.Debug(nameof(OnNewWebSessionAvailable),
                                         "Registering for a new API key. DomainName = `{0}`", domainName)
@@ -785,7 +785,7 @@ namespace SDroid
                 await BotLogger.Debug(nameof(OnNewWebSessionAvailable), "Session updated successfully.")
                     .ConfigureAwait(false);
 
-                lock (this)
+                lock (LocalLock)
                 {
                     // If bot already logged it and this is a session update, just make sure bot is running
                     if (BotStatus != SteamBotStatus.LoggingIn)
@@ -836,7 +836,7 @@ namespace SDroid
                         TimeSpan.FromMilliseconds(-1));
                 }
 
-                lock (this)
+                lock (LocalLock)
                 {
                     BotStatus = SteamBotStatus.Running;
                 }
@@ -862,12 +862,17 @@ namespace SDroid
             throw new NotImplementedException();
         }
 
+        protected virtual void OnStatusChanged()
+        {
+            // ignore
+        }
+
         protected virtual async Task OnTerminate()
         {
             await BotLogger.Error(nameof(OnTerminate), "Terminating due to a fault. See previous logs.")
                 .ConfigureAwait(false);
 
-            lock (this)
+            lock (LocalLock)
             {
                 BotStatus = SteamBotStatus.Faulted;
             }

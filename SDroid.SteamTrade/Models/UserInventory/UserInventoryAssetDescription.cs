@@ -21,7 +21,9 @@ namespace SDroid.SteamTrade.Models.UserInventory
             bool isCommodity,
             bool isCurrency,
             UserInventoryAssetDescriptionEntry[] descriptions,
-            UserInventoryAssetDescriptionTag[] tags)
+            UserInventoryAssetDescriptionTag[] tags,
+            UserInventoryAssetDescriptionAction[] actions
+        )
         {
             AppId = appId;
             ClassId = classId;
@@ -37,6 +39,7 @@ namespace SDroid.SteamTrade.Models.UserInventory
             IsCurrency = isCurrency;
             Descriptions = descriptions;
             Tags = tags;
+            Actions = actions;
             IsCommodity = isCommodity;
         }
 
@@ -65,7 +68,10 @@ namespace SDroid.SteamTrade.Models.UserInventory
         public string MarketName { get; }
 
         public string Name { get; }
+
         public UserInventoryAssetDescriptionTag[] Tags { get; }
+
+        public UserInventoryAssetDescriptionAction[] Actions { get; }
 
         public string Type { get; }
 

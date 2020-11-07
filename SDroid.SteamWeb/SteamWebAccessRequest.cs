@@ -12,16 +12,17 @@ namespace SDroid.SteamWeb
         public SteamWebAccessRequest(
             string url,
             SteamWebAccessRequestMethod method,
-            QueryStringBuilder data) : this(url)
+            QueryStringBuilder formData) : this(url)
         {
             Method = method;
-            Data = data;
+            FormData = formData;
         }
 
         public bool AcceptFailureResponses { get; set; }
 
-        public QueryStringBuilder Data { get; set; }
+        public QueryStringBuilder FormData { get; set; }
         public NameValueCollection Headers { get; set; }
+        public bool IsUpload { get; set; } = false;
         public bool IsAjax { get; set; }
         public SteamWebAccessRequestMethod Method { get; set; } = SteamWebAccessRequestMethod.Get;
         public string Referer { get; set; }
@@ -32,7 +33,7 @@ namespace SDroid.SteamWeb
         {
             return new SteamWebAccessRequest(Url)
             {
-                Data = Data != null ? new QueryStringBuilder(Data) : null,
+                FormData = FormData != null ? new QueryStringBuilder(FormData) : null,
                 Headers = Headers != null ? new NameValueCollection(Headers) : null,
                 Method = Method,
                 Referer = Referer,

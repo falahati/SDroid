@@ -8,6 +8,7 @@ namespace SDroid.SteamTrade.InternalModels.InventoryJson
     internal class InventoryAssetDescriptionV2
     {
         private const string ImageBaseAddress = "https://steamcommunity-a.akamaihd.net/economy/image/";
+
         [JsonProperty("actions")]
         public InventoryAssetDescriptionActionV2[] Actions { get; set; }
 
@@ -79,8 +80,8 @@ namespace SDroid.SteamTrade.InternalModels.InventoryJson
         public UserInventoryAssetDescription ToSteamAssetDescription()
         {
             return new UserInventoryAssetDescription(
-                AppId, 
-                ClassId, 
+                AppId,
+                ClassId,
                 InstanceId,
                 string.IsNullOrWhiteSpace(IconUrl) ? null : ImageBaseAddress + IconUrl,
                 string.IsNullOrWhiteSpace(IconUrlLarge) ? null : ImageBaseAddress + IconUrlLarge,
@@ -89,14 +90,13 @@ namespace SDroid.SteamTrade.InternalModels.InventoryJson
                 MarketName,
                 Type,
                 IsTradable,
-                IsMarketable, 
-                IsCommodity, 
+                IsMarketable,
+                IsCommodity,
                 IsCurrency,
-                Descriptions?.Select(entity => entity.ToSteamAssetDescriptionEntry()).ToArray() ??
-                new UserInventoryAssetDescriptionEntry[0],
-                Tags?.Select(tag => tag.ToSteamAssetDescriptionTag()).ToArray() ??
-                new UserInventoryAssetDescriptionTag[0]
-                );
+                Descriptions?.Select(entity => entity.ToSteamAssetDescriptionEntry()).ToArray() ?? new UserInventoryAssetDescriptionEntry[0],
+                Tags?.Select(tag => tag.ToSteamAssetDescriptionTag()).ToArray() ?? new UserInventoryAssetDescriptionTag[0],
+                Actions?.Select(action => action.ToUserInventoryAssetDescriptionAction()).ToArray() ?? new UserInventoryAssetDescriptionAction[0]
+            );
         }
     }
 }

@@ -116,10 +116,9 @@ namespace SDroid.SteamTrade.InternalModels.TradeJson
                 IsMarketable,
                 IsCommodity,
                 IsCurrency,
-                Descriptions?.Select(entity => entity.ToSteamAssetDescriptionEntry()).ToArray() ??
-                new UserInventoryAssetDescriptionEntry[0],
-                Tags?.Select(tag => tag.ToSteamAssetDescriptionTag()).ToArray() ??
-                new UserInventoryAssetDescriptionTag[0]
+                Descriptions?.Select(entity => entity.ToSteamAssetDescriptionEntry()).ToArray() ?? new UserInventoryAssetDescriptionEntry[0],
+                Tags?.Select(tag => tag.ToSteamAssetDescriptionTag()).ToArray() ?? new UserInventoryAssetDescriptionTag[0],
+                new UserInventoryAssetDescriptionAction[0]
             );
         }
 

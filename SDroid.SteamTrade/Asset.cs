@@ -4,7 +4,6 @@ namespace SDroid.SteamTrade
 {
     public class Asset : IEquatable<Asset>
     {
-        /// <inheritdoc />
         public Asset(long appId, long contextId, long assetId, long amount = 1)
         {
             AppId = appId;

@@ -231,8 +231,8 @@ namespace SDroid.SteamMobile
 
                     if (!string.IsNullOrEmpty(location))
                     {
-                        //Our OAuth token has expired. This is given both when we must refresh our session, or the entire OAuth Token cannot be refreshed anymore.
-                        //Thus, we should only throw this exception when we're attempting to refresh our session.
+                        // Our OAuth token has expired. This is given both when we must refresh our session, or the entire OAuth Token cannot be refreshed anymore.
+                        // Thus, we should only throw this exception when we're attempting to refresh our session.
                         if (location == "steammobile://lostauth")
                         {
                             throw new TokenExpiredException(e);
