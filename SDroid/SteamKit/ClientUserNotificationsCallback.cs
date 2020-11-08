@@ -9,8 +9,8 @@ namespace SDroid.SteamKit
         internal ClientUserNotificationsCallback(JobID jobId, CMsgClientUserNotifications body)
         {
             JobID = jobId;
-            Notifications = body.notifications.Select(n =>
-                new UserNotification((int) n.count, (NotificationType) n.user_notification_type)
+            Notifications = body.notifications.Select(
+                n => new UserNotification((int) n.count, (NotificationType) n.user_notification_type)
             ).ToArray();
         }
 

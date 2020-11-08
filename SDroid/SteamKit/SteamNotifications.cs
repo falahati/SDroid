@@ -47,12 +47,7 @@ namespace SDroid.SteamKit
         /// </summary>
         public AsyncJob<ClientCommentNotificationsCallback> RequestClientNotifications()
         {
-            var reqMsg = new ClientMsgProtobuf<CMsgClientRequestCommentNotifications>(
-                EMsg.ClientRequestCommentNotifications
-            )
-            {
-                //SourceJobID = Client.GetNextJobID()
-            };
+            var reqMsg = new ClientMsgProtobuf<CMsgClientRequestCommentNotifications>(EMsg.ClientRequestCommentNotifications);
 
             Client.Send(reqMsg);
             return null;
@@ -64,13 +59,7 @@ namespace SDroid.SteamKit
         /// </summary>
         public AsyncJob<ClientUserNotificationsCallback> RequestUserNotifications()
         {
-            var reqMsg =
-                new ClientMsgProtobuf<CMsgClientRequestItemAnnouncements>(
-                    EMsg.ClientRequestItemAnnouncements
-                )
-                {
-                    //SourceJobID = Client.GetNextJobID()
-                };
+            var reqMsg = new ClientMsgProtobuf<CMsgClientRequestItemAnnouncements>(EMsg.ClientRequestItemAnnouncements);
             Client.Send(reqMsg);
 
             return null;

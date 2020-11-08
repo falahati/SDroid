@@ -13,7 +13,8 @@ namespace SDroid.SteamKit
     {
         public static async Task<WebSession> AuthenticateWebSession(
             this SteamClient client,
-            string userNonce)
+            string userNonce
+            )
         {
             // Generate random SessionId
             var sessionId = Guid.NewGuid().ToString("N");
@@ -22,18 +23,18 @@ namespace SDroid.SteamKit
             var sessionKey = CryptoHelper.GenerateRandomBlock(32);
 
             // rsa encrypt it with the public key for the universe we're on
-            byte[] cryptedSessionKey;
+            byte[] encryptedSessionKey;
 
             using (var rsa = new RSACrypto(KeyDictionary.GetPublicKey(client.Universe)))
             {
-                cryptedSessionKey = rsa.Encrypt(sessionKey);
+                encryptedSessionKey = rsa.Encrypt(sessionKey);
             }
 
             var loginKey = new byte[20];
             Array.Copy(Encoding.ASCII.GetBytes(userNonce), loginKey, userNonce.Length);
 
             // AES encrypt the loginkey with our session key.
-            var cryptedLoginKey = CryptoHelper.SymmetricEncrypt(loginKey, sessionKey);
+            var encryptedLoginKey = CryptoHelper.SymmetricEncrypt(loginKey, sessionKey);
 
             try
             {
@@ -45,8 +46,8 @@ namespace SDroid.SteamKit
                         new Dictionary<string, object>
                         {
                             {"steamid", client.SteamID.ConvertToUInt64().ToString()},
-                            {"sessionkey", HttpUtility.UrlEncode(cryptedSessionKey)},
-                            {"encrypted_loginkey", HttpUtility.UrlEncode(cryptedLoginKey)}
+                            {"sessionkey", HttpUtility.UrlEncode(encryptedSessionKey)},
+                            {"encrypted_loginkey", HttpUtility.UrlEncode(encryptedLoginKey)}
                         }
                     ).ConfigureAwait(false);
 
@@ -60,7 +61,7 @@ namespace SDroid.SteamKit
                     );
                 }
             }
-            catch (Exception e)
+            catch
             {
                 return null;
             }

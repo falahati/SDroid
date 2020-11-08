@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.Extensions.Logging;
 using SDroid.SteamWeb;
 using SteamKit2;
 
@@ -6,7 +7,7 @@ namespace SDroid.Interfaces
 {
     public interface ISteamBot : IDisposable
     {
-        IBotLogger BotLogger { get; }
+        ILogger BotLogger { get; }
         IBotSettings BotSettings { get; }
         SteamBotStatus BotStatus { get; }
         SteamWebAccess WebAccess { get; }
