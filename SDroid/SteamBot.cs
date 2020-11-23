@@ -340,7 +340,7 @@ namespace SDroid
                                 }
                                 else
                                 {
-                                    backoff.Reset();
+                                    // backoff.Reset(); allow backoff
                                     loginCredentials.Password = password;
                                     loginCredentials.EmailVerificationCode = null;
                                     loginCredentials.CaptchaCode = null;
@@ -364,7 +364,7 @@ namespace SDroid
                                 }
                                 else
                                 {
-                                    backoff.Reset();
+                                    // backoff.Reset(); allow backoff
                                     loginCredentials.CaptchaCode = captchaCode;
                                 }
 
@@ -400,7 +400,7 @@ namespace SDroid
                                 }
                                 else
                                 {
-                                    backoff.Reset();
+                                    // backoff.Reset(); allow backoff
                                     loginCredentials.EmailVerificationCode = emailAuthCode;
                                 }
 

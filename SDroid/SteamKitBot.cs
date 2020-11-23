@@ -277,7 +277,7 @@ namespace SDroid
             if (string.IsNullOrWhiteSpace(LoginDetails.Password) && string.IsNullOrWhiteSpace(LoginDetails.LoginKey))
             {
                 BotLogger.LogDebug("Requesting account password.");
-                var password = OnPasswordRequired().Result;
+                var password = await OnPasswordRequired();
 
                 if (string.IsNullOrWhiteSpace(password))
                 {
@@ -490,7 +490,7 @@ namespace SDroid
                     return;
                 }
 
-                LoginBackoff.Reset();
+                // LoginBackoff.Reset(); allow backoff
                 LoginDetails.TwoFactorCode = mobileAuthCode;
             }
             else if (
@@ -509,7 +509,7 @@ namespace SDroid
                     return;
                 }
 
-                LoginBackoff.Reset();
+                // LoginBackoff.Reset(); allow backoff
                 LoginDetails.AuthCode = emailAuthCode;
             }
             else if (loggedOnCallback.Result == EResult.InvalidPassword)
@@ -525,7 +525,7 @@ namespace SDroid
                     return;
                 }
 
-                LoginBackoff.Reset();
+                // LoginBackoff.Reset(); allow backoff
                 LoginDetails.Password = password;
             }
             else if (loggedOnCallback.Result == EResult.RateLimitExceeded)
