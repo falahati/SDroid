@@ -50,7 +50,7 @@ namespace SDroid.SteamMobile
                 CommunityCookieDomain));
 
             OAuthToken = oAuthToken;
-            SteamCommunityId = steamId;
+            SteamId = steamId;
         }
 
         public MobileSession()
@@ -84,7 +84,7 @@ namespace SDroid.SteamMobile
         /// <summary>
         ///     Gets the steam user identifier number.
         /// </summary>
-        public new ulong? SteamCommunityId
+        public new ulong? SteamId
         {
             get
             {
@@ -96,13 +96,13 @@ namespace SDroid.SteamMobile
                     return steamId;
                 }
 
-                return base.SteamCommunityId;
+                return base.SteamId;
             }
             protected set
             {
                 WebCookies.Add(new Cookie("steamid", value?.ToString() ?? "", "/",
                     CommunityCookieDomain));
-                base.SteamCommunityId = value;
+                base.SteamId = value;
             }
         }
 
@@ -112,7 +112,7 @@ namespace SDroid.SteamMobile
             return other != null &&
                    base.Equals(other) &&
                    OAuthToken == other.OAuthToken &&
-                   SteamCommunityId == other.SteamCommunityId;
+                   SteamId == other.SteamId;
         }
 
         public static bool operator ==(MobileSession data1, MobileSession data2)
@@ -130,7 +130,7 @@ namespace SDroid.SteamMobile
         {
             return new MobileSession(
                 OAuthToken,
-                SteamCommunityId,
+                SteamId,
                 SteamLogin,
                 SteamLoginSecure,
                 SessionId,
@@ -164,7 +164,7 @@ namespace SDroid.SteamMobile
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SteamLogin);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SteamLoginSecure);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(OAuthToken);
-            hashCode = hashCode * -1521134295 + SteamCommunityId.GetHashCode();
+            hashCode = hashCode * -1521134295 + SteamId.GetHashCode();
 
             return hashCode;
         }
@@ -180,7 +180,7 @@ namespace SDroid.SteamMobile
         {
             return base.HasEnoughInfo() &&
                    !string.IsNullOrWhiteSpace(OAuthToken) &&
-                   SteamCommunityId > 0;
+                   SteamId > 0;
         }
 
         /// <summary>
@@ -212,10 +212,10 @@ namespace SDroid.SteamMobile
                 }
 
                 SteamLogin = !string.IsNullOrWhiteSpace(serverResponse.Response?.Token)
-                    ? SteamCommunityId + "%7C%7C" + serverResponse.Response.Token
+                    ? SteamId + "%7C%7C" + serverResponse.Response.Token
                     : null;
                 SteamLoginSecure = !string.IsNullOrWhiteSpace(serverResponse.Response?.TokenSecure)
-                    ? SteamCommunityId + "%7C%7C" + serverResponse.Response.TokenSecure
+                    ? SteamId + "%7C%7C" + serverResponse.Response.TokenSecure
                     : null;
 
                 return true;

@@ -132,7 +132,7 @@ namespace SDroid.SteamMobile
                 var steamId = steamIdProperties.steam_id ??
                               steamIdProperties.steamid ??
                               steamIdProperties.session.steam_id ??
-                              steamIdProperties.session.steamid ?? authenticator.Session.SteamCommunityId;
+                              steamIdProperties.session.steamid ?? authenticator.Session.SteamId;
 
                 var webCookieProperties = JsonConvert.DeserializeAnonymousType(
                     serialized,
@@ -466,7 +466,7 @@ namespace SDroid.SteamMobile
                         "RemoveAuthenticator",
                         "v0001", new
                         {
-                            steamid = Session.SteamCommunityId,
+                            steamid = Session.SteamId,
                             steamguard_scheme = AuthenticatorData.SteamGuardScheme,
                             revocation_code = AuthenticatorData.RevocationCode,
                             access_token = Session.OAuthToken
@@ -538,7 +538,7 @@ namespace SDroid.SteamMobile
             return new QueryStringBuilder
             {
                 {"p", DeviceId},
-                {"a", Session.SteamCommunityId},
+                {"a", Session.SteamId},
                 {"k", GenerateConfirmationHashForTime(time, tag)},
                 {"t", time.ToUnixTime()},
                 {"m", MobileSession.ClientName},

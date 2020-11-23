@@ -52,7 +52,7 @@ namespace SDroid
 
         protected virtual SteamID SteamId
         {
-            get => WebAccess?.Session?.SteamCommunityId != null ? new SteamID(WebAccess.Session.SteamCommunityId.Value) : null;
+            get => WebAccess?.Session?.SteamId != null ? new SteamID(WebAccess.Session.SteamId.Value) : null;
         }
 
         protected SteamWebAccess WebAccess { get; set; }

@@ -28,7 +28,7 @@ namespace SDroid.SteamWeb
         [JsonConstructor]
         // ReSharper disable once TooManyDependencies
         public WebSession(
-            ulong? steamId, 
+            ulong? steamId,
             string steamLogin,
             string steamLoginSecure,
             string sessionId,
@@ -40,7 +40,7 @@ namespace SDroid.SteamWeb
             SessionId = sessionId;
             RememberLoginToken = rememberLoginToken;
             SteamMachineAuthenticationTokens = steamMachineAuthenticationTokens;
-            SteamCommunityId = steamId;
+            SteamId = steamId;
         }
 
         internal WebSession(LoginResponseTransferParameters transferParameters, string sessionId) :
@@ -60,7 +60,7 @@ namespace SDroid.SteamWeb
         /// <summary>
         ///     Gets the steam user identifier number.
         /// </summary>
-        public ulong? SteamCommunityId
+        public ulong? SteamId
         {
             get => _steamCommunityId ?? SteamMachineAuthenticationTokens?.Keys.FirstOrDefault();
             protected set => _steamCommunityId = value;
@@ -210,7 +210,7 @@ namespace SDroid.SteamWeb
 
         public virtual WebSession Clone()
         {
-            return new WebSession(SteamCommunityId, SteamLogin, SteamLoginSecure, SessionId, RememberLoginToken,
+            return new WebSession(SteamId, SteamLogin, SteamLoginSecure, SessionId, RememberLoginToken,
                 SteamMachineAuthenticationTokens);
         }
 
