@@ -1033,9 +1033,8 @@ namespace SDroid.SteamTrade
                 else
                 {
                     offers = await GetTradeOffers(
-                            true, true, false, true, false,
-                            LastUpdate.Value - TimeSpan.FromMinutes(5))
-                        .ConfigureAwait(false);
+                        true, true, true, true, false, LastUpdate.Value - TimeSpan.FromMinutes(5)
+                    ).ConfigureAwait(false);
                 }
 
                 LastUpdate = startTime;
@@ -1051,7 +1050,7 @@ namespace SDroid.SteamTrade
                     }
                 }
 
-                var _ = Task.Run(() => HandlePendingTradeOffers());
+                var _ = Task.Run(HandlePendingTradeOffers);
             }
             catch (Exception)
             {
