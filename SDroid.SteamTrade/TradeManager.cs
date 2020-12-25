@@ -7,10 +7,12 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SDroid.SteamTrade.EventArguments;
 using SDroid.SteamTrade.Exceptions;
+using SDroid.SteamTrade.InternalModels.EconomyServiceAPI;
 using SDroid.SteamTrade.InternalModels.TradeJson;
 using SDroid.SteamTrade.Models.Trade;
 using SDroid.SteamTrade.Models.TradeOffer;
 using SDroid.SteamWeb;
+using SDroid.SteamWeb.Models;
 using SteamKit2;
 
 namespace SDroid.SteamTrade
@@ -115,6 +117,35 @@ namespace SDroid.SteamTrade
             }
 
             return new TradeReceipt(assets.ToArray());
+        }
+
+        internal static async Task<TradeExchangeReceipt> GetExchangeReceipt(
+            OperationRetryHelper retryHelper,
+            SteamWebAPI steamWebAPI,
+            long tradeId
+        )
+        {
+            var response = await retryHelper.RetryOperationAsync(
+                () => steamWebAPI.RequestObject<SteamWebAPIResponse<GetTradeStatusResponse>>(
+                    "IEconService",
+                    SteamWebAccessRequestMethod.Get,
+                    "GetTradeStatus",
+                    "v1",
+                    new
+                    {
+                        tradeid = tradeId,
+                        get_descriptions = 1,
+                    }
+                ),
+                shouldThrowExceptionOnTotalFailure: false
+            ).ConfigureAwait(false);
+
+            if (response.Response == null || response.Response.Trades.Count == 0)
+            {
+                throw new TradeException("Failed to retrieve trade receipt.");
+            }
+
+            return new TradeExchangeReceipt(response.Response.Trades[0], response.Response.Descriptions.ToArray());
         }
 
         public async Task<Trade> CreateTrade(SteamID tradePartner)

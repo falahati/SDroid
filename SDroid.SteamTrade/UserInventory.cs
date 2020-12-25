@@ -11,6 +11,7 @@ using SDroid.SteamTrade.InternalModels.InventoryJson;
 using SDroid.SteamTrade.Models.UserInventory;
 using SDroid.SteamWeb;
 using SteamKit2;
+using SteamKit2.GC.TF2.Internal;
 
 namespace SDroid.SteamTrade
 {
@@ -178,7 +179,7 @@ namespace SDroid.SteamTrade
             do
             {
                 var retrySuccess = false;
-
+                Exception lastException = null;
                 for (var retry = 0; retry < 3; retry++)
                 {
                     try
@@ -242,15 +243,15 @@ namespace SDroid.SteamTrade
                             break;
                         }
                     }
-                    catch (WebException)
+                    catch (WebException e)
                     {
-                        // ignored
+                        lastException = e;
                     }
                 }
 
                 if (!retrySuccess)
                 {
-                    throw new UserInventoryFetchAssetsException(appId, contextId, userSteamId);
+                    throw new UserInventoryFetchAssetsException(appId, contextId, userSteamId, lastException);
                 }
 
                 await Task.Delay(TimeSpan.FromMilliseconds(300)).ConfigureAwait(false);

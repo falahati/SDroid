@@ -6,12 +6,11 @@ using SDroid.SteamTrade.Models.UserInventory;
 
 namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
 {
-    internal class AssetDescription
+    internal class TradeExchangeStatusAssetDescription
     {
         private const string ImageBaseAddress = "https://steamcommunity-a.akamaihd.net/economy/image/";
 
         [JsonProperty("appid")]
-        [JsonConverter(typeof(JsonAsStringConverter<long>))]
         public long AppId { get; set; }
 
         [JsonProperty("background_color")]
@@ -52,11 +51,23 @@ namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
         [JsonProperty("name_color")]
         public string NameColor { get; set; }
 
-        [JsonProperty("owner_actions")]
-        public List<AssetDescriptionOwnerAction> OwnerActions { get; set; }
+        [JsonProperty("actions")]
+        public List<AssetDescriptionOwnerAction> Actions { get; set; }
+
+        [JsonProperty("market_actions")]
+        public List<AssetDescriptionOwnerAction> MarketActions { get; set; }
 
         [JsonProperty("type")]
         public string Type { get; set; }
+
+        [JsonProperty("commodity")]
+        public bool IsCommodity { get; set; }
+
+        [JsonProperty("market_tradable_restriction")]
+        public int MarketTradableRestriction { get; set; }
+
+        [JsonProperty("marketable")]
+        public bool IsMarketable { get; set; }
 
         public UserInventoryAssetDescription ToSteamAssetDescription()
         {
@@ -71,12 +82,12 @@ namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
                 MarketName,
                 Type,
                 IsTradable,
-                !string.IsNullOrWhiteSpace(MarketHashName),
-                !IsCurrency,
+                IsMarketable,
+                IsCommodity,
                 IsCurrency,
                 new UserInventoryAssetDescriptionEntry[0],
                 new UserInventoryAssetDescriptionTag[0],
-                OwnerActions?.Select(action => action.ToUserInventoryAssetDescriptionAction()).ToArray() ?? new UserInventoryAssetDescriptionAction[0]
+                Actions?.Select(action => action.ToUserInventoryAssetDescriptionAction()).ToArray() ?? new UserInventoryAssetDescriptionAction[0]
             );
         }
     }

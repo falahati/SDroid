@@ -336,7 +336,7 @@ namespace SDroid.SteamTrade
             throw new TradeOfferException("Failed to accept trade offer.");
         }
 
-        public async Task Cancel(TradeOffer offer)
+        public async Task CancelAlternate(TradeOffer offer)
         {
             if (!offer.IsOurOffer ||
                 offer.Status != TradeOfferStatus.Active)
@@ -377,7 +377,7 @@ namespace SDroid.SteamTrade
             throw new TradeOfferException("Failed to cancel trade offer.");
         }
 
-        public async Task CancelTradeOfferAlternate(TradeOffer offer)
+        public async Task Cancel(TradeOffer offer)
         {
             if (!offer.IsOurOffer ||
                 offer.Status != TradeOfferStatus.Active)
@@ -465,7 +465,7 @@ namespace SDroid.SteamTrade
             throw new TradeOfferException("Failed to send counter offer.");
         }
 
-        public async Task Decline(TradeOffer offer)
+        public async Task DeclineAlternate(TradeOffer offer)
         {
             if (offer.IsOurOffer ||
                 offer.Status != TradeOfferStatus.Active)
@@ -506,7 +506,7 @@ namespace SDroid.SteamTrade
             throw new TradeOfferException("Failed to decline trade offer.");
         }
 
-        public async Task DeclineTradeOfferAlternate(TradeOffer offer)
+        public async Task Decline(TradeOffer offer)
         {
             if (offer.IsOurOffer ||
                 offer.Status != TradeOfferStatus.Active)
@@ -539,11 +539,50 @@ namespace SDroid.SteamTrade
 
         public Task<EscrowDuration> GetEscrowDuration(SteamID partnerSteamId)
         {
-            return GetEscrowDuration(partnerSteamId, null);
+            return GetEscrowDurationAlternate(partnerSteamId, null);
+        }
+
+        public async Task<EscrowDuration> GetEscrowDuration(SteamID partnerSteamId, string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                throw new ArgumentException("Token can not be empty.", nameof(token));
+            }
+
+            var response = await _tradeOfferOptions.RetryOperationAsync(
+                () => SteamWebAPI.RequestObject<SteamWebAPIResponse<GetTradeHoldDurationsResponse>>(
+                    "IEconService",
+                    SteamWebAccessRequestMethod.Get,
+                    "GetTradeHoldDurations",
+                    "v1",
+                    new
+                    {
+                        steamid_target = partnerSteamId.ConvertToUInt64(),
+                        trade_offer_access_token = token,
+                    }
+                ),
+                shouldThrowExceptionOnTotalFailure: false
+            ).ConfigureAwait(false);
+
+            if (response.Response?.MyEscrow != null && response.Response.TheirEscrow != null)
+            {
+                var myEscrowInSeconds = response.Response.MyEscrow.HoldDurationInSeconds;
+                var theirEscrowInSeconds = response.Response.TheirEscrow.HoldDurationInSeconds;
+
+                if (response.Response.BothEscrow != null)
+                {
+                    myEscrowInSeconds = Math.Max(response.Response.BothEscrow.HoldDurationInSeconds, myEscrowInSeconds);
+                    theirEscrowInSeconds = Math.Max(response.Response.BothEscrow.HoldDurationInSeconds, theirEscrowInSeconds);
+                }
+
+                return new EscrowDuration(TimeSpan.FromSeconds(myEscrowInSeconds), TimeSpan.FromSeconds(theirEscrowInSeconds));
+            }
+
+            throw new EscrowDurationException();
         }
 
         // ReSharper disable once TooManyDeclarations
-        public async Task<EscrowDuration> GetEscrowDuration(SteamID partnerSteamId, string token)
+        public async Task<EscrowDuration> GetEscrowDurationAlternate(SteamID partnerSteamId, string token)
         {
             var serverResponse = await _tradeOfferOptions.RetryOperationAsync(
                 () => SteamWebAccess.FetchString(
@@ -585,8 +624,8 @@ namespace SDroid.SteamTrade
                     if (bothMatch.Groups["days"].Success &&
                         double.TryParse(myMatch.Groups["days"].Value, out var bothEscrowInDays))
                     {
-                        myEscrowInDays = bothEscrowInDays;
-                        theirEscrowInDays = bothEscrowInDays;
+                        myEscrowInDays = Math.Max(bothEscrowInDays, myEscrowInDays);
+                        theirEscrowInDays = Math.Max(bothEscrowInDays, theirEscrowInDays);
                     }
 
                     return new EscrowDuration(TimeSpan.FromDays(myEscrowInDays), TimeSpan.FromDays(theirEscrowInDays));
@@ -595,6 +634,7 @@ namespace SDroid.SteamTrade
 
             throw new EscrowDurationException();
         }
+
 
         // ReSharper disable once TooManyDeclarations
         public async Task<EscrowDuration> GetEscrowDuration(TradeOffer tradeOffer)
@@ -630,8 +670,8 @@ namespace SDroid.SteamTrade
                     if (bothMatch.Groups["days"].Success &&
                         double.TryParse(myMatch.Groups["days"].Value, out var bothEscrowInDays))
                     {
-                        myEscrowInDays = bothEscrowInDays;
-                        theirEscrowInDays = bothEscrowInDays;
+                        myEscrowInDays = Math.Max(bothEscrowInDays, myEscrowInDays);
+                        theirEscrowInDays = Math.Max(bothEscrowInDays, theirEscrowInDays);
                     }
 
                     return new EscrowDuration(TimeSpan.FromDays(myEscrowInDays), TimeSpan.FromDays(theirEscrowInDays));
@@ -678,6 +718,23 @@ namespace SDroid.SteamTrade
             try
             {
                 return TradeManager.GetReceipt(TradeOfferOptions, SteamWebAccess, offer.TradeId.Value);
+            }
+            catch (TradeException e)
+            {
+                throw new TradeOfferException(e.Message, e);
+            }
+        }
+
+        public Task<TradeExchangeReceipt> GetExchangeReceipt(TradeOffer offer)
+        {
+            if (offer.Status != TradeOfferStatus.Accepted || !(offer.TradeId > 0))
+            {
+                throw new InvalidOperationException("Can't get a receipt for a trade offer that is not yet accepted.");
+            }
+
+            try
+            {
+                return TradeManager.GetExchangeReceipt(TradeOfferOptions, SteamWebAPI, offer.TradeId.Value);
             }
             catch (TradeException e)
             {

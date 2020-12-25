@@ -14,7 +14,7 @@ namespace SDroid.SteamTrade.Exceptions
             long contextId,
             SteamID steamId,
             Exception innerException = null)
-            : base(string.Format("Failed to fetch user {0} app {1}, context {2} inventory.", steamId, appId, contextId),
+            : base($"Failed to fetch user {steamId} app {appId}, context {contextId} inventory.",
                 innerException)
         {
             SteamId = steamId;

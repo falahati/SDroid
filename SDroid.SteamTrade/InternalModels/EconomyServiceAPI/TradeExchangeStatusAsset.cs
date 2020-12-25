@@ -1,22 +1,25 @@
 ﻿using Newtonsoft.Json;
 using SDroid.SteamTrade.Helpers;
-using SDroid.SteamTrade.Models.TradeOffer;
+using SDroid.SteamTrade.Models.Trade;
 
 namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
 {
-    internal class Asset
+    internal class TradeExchangeStatusAsset
     {
         [JsonProperty("amount")]
         [JsonConverter(typeof(JsonAsStringConverter<long>))]
         public long Amount { get; set; }
 
         [JsonProperty("appid")]
-        [JsonConverter(typeof(JsonAsStringConverter<long>))]
         public long AppId { get; set; }
 
         [JsonProperty("assetid")]
         [JsonConverter(typeof(JsonAsStringConverter<long>))]
         public long AssetId { get; set; }
+
+        [JsonProperty("new_assetid")]
+        [JsonConverter(typeof(JsonAsStringConverter<long>))]
+        public long NewAssetId { get; set; }
 
         [JsonProperty("classid")]
         [JsonConverter(typeof(JsonAsStringConverter<long>))]
@@ -26,16 +29,26 @@ namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
         [JsonConverter(typeof(JsonAsStringConverter<long>))]
         public long ContextId { get; set; }
 
+        [JsonProperty("new_contextid")]
+        [JsonConverter(typeof(JsonAsStringConverter<long>))]
+        public long NewContextId { get; set; }
+
         [JsonProperty("instanceid")]
         [JsonConverter(typeof(JsonAsStringConverter<long>))]
         public long InstanceId { get; set; }
 
-        [JsonProperty("missing")]
-        public bool IsMissing { get; set; }
-
-        public TradeOfferAsset ToTradeOfferAsset()
+        public TradeExchangeAsset ToTradeExchangeAsset()
         {
-            return new TradeOfferAsset(AppId, ContextId, AssetId, ClassId, InstanceId, IsMissing, Amount);
+            return new TradeExchangeAsset(
+                AppId,
+                ContextId,
+                AssetId,
+                ClassId,
+                InstanceId,
+                NewContextId,
+                NewAssetId,
+                Amount
+            );
         }
     }
 }

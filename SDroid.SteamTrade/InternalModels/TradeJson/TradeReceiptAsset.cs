@@ -122,7 +122,6 @@ namespace SDroid.SteamTrade.InternalModels.TradeJson
             );
         }
 
-
         public UserInventoryAsset ToSteamInventoryAsset()
         {
             return new UserInventoryAsset(AppId, ContextId, AssetId, ClassId, InstanceId, Amount);
