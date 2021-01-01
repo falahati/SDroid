@@ -137,7 +137,15 @@ namespace SDroid
 
             BotLogger.LogInformation("Stopping bot.");
 
-            CancellationTokenSource?.Cancel(true);
+            try
+            {
+                CancellationTokenSource?.Cancel(true);
+            }
+            catch (Exception)
+            {
+                // ignore
+            }
+
             SessionCheckTimer?.Dispose();
             AuthenticatorConfirmationTimer?.Dispose();
 
