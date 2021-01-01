@@ -64,7 +64,7 @@ namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
         public bool IsCommodity { get; set; }
 
         [JsonProperty("market_tradable_restriction")]
-        public int MarketTradableRestriction { get; set; }
+        public int TradableRestriction { get; set; }
 
         [JsonProperty("marketable")]
         public bool IsMarketable { get; set; }
@@ -85,6 +85,8 @@ namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
                 IsMarketable,
                 IsCommodity,
                 IsCurrency,
+                TradableRestriction,
+                0,
                 new UserInventoryAssetDescriptionEntry[0],
                 new UserInventoryAssetDescriptionTag[0],
                 Actions?.Select(action => action.ToUserInventoryAssetDescriptionAction()).ToArray() ?? new UserInventoryAssetDescriptionAction[0]

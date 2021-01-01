@@ -41,8 +41,8 @@ namespace SDroid.SteamTrade.Models.Trade
             TimeCreated = offer.TimeCreated <= 0
                 ? (DateTime?) null
                 : TradeOfferManager.Epoch.AddSeconds(offer.TimeCreated);
-            OurAssets = ourAssets.ToArray();
-            TheirAssets = theirAssets.ToArray();
+            AssetsSent = ourAssets.ToArray();
+            AssetsReceived = theirAssets.ToArray();
             PartnerSteamId = new SteamID(offer.PartnerSteamId);
             TradeId = offer.TradeId;
 
@@ -95,13 +95,13 @@ namespace SDroid.SteamTrade.Models.Trade
             }
         }
 
-        public TradeExchangeAsset[] OurAssets { get; }
+        public TradeExchangeAsset[] AssetsSent { get; }
 
         public SteamID PartnerSteamId { get; }
 
         public TradeOfferStatus Status { get; }
 
-        public TradeExchangeAsset[] TheirAssets { get; }
+        public TradeExchangeAsset[] AssetsReceived { get; }
 
         public DateTime? TimeCreated { get; }
 

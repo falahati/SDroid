@@ -20,6 +20,8 @@ namespace SDroid.SteamTrade.Models.UserInventory
             bool isMarketable,
             bool isCommodity,
             bool isCurrency,
+            int tradableRestriction,
+            int marketableRestriction,
             UserInventoryAssetDescriptionEntry[] descriptions,
             UserInventoryAssetDescriptionTag[] tags,
             UserInventoryAssetDescriptionAction[] actions
@@ -41,6 +43,8 @@ namespace SDroid.SteamTrade.Models.UserInventory
             Tags = tags;
             Actions = actions;
             IsCommodity = isCommodity;
+            TradableRestriction = tradableRestriction;
+            MarketableRestriction = marketableRestriction;
         }
 
         public long AppId { get; }
@@ -74,6 +78,11 @@ namespace SDroid.SteamTrade.Models.UserInventory
         public UserInventoryAssetDescriptionAction[] Actions { get; }
 
         public string Type { get; }
+
+        public int TradableRestriction { get; }
+
+        public int MarketableRestriction { get; }
+
 
         /// <inheritdoc />
         public bool Equals(UserInventoryAssetDescription other)

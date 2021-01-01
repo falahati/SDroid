@@ -11,7 +11,6 @@ using SDroid.SteamTrade.InternalModels.InventoryJson;
 using SDroid.SteamTrade.Models.UserInventory;
 using SDroid.SteamWeb;
 using SteamKit2;
-using SteamKit2.GC.TF2.Internal;
 
 namespace SDroid.SteamTrade
 {

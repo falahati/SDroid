@@ -25,6 +25,9 @@ namespace SDroid.SteamTrade.InternalModels.InventoryJson
         [JsonProperty("descriptions")]
         public InventoryAssetDescriptionEntityV2[] Descriptions { get; set; }
 
+        [JsonProperty("owner_descriptions")]
+        public InventoryAssetDescriptionEntityV2[] OwnerDescriptions { get; set; }
+
         [JsonProperty("icon_url")]
         public string IconUrl { get; set; }
 
@@ -59,14 +62,14 @@ namespace SDroid.SteamTrade.InternalModels.InventoryJson
 
         [JsonProperty("market_marketable_restriction")]
         [JsonConverter(typeof(JsonAsStringConverter<int>))]
-        public int MarketMarketableRestriction { get; set; }
+        public int MarketableRestriction { get; set; }
 
         [JsonProperty("market_name")]
         public string MarketName { get; set; }
 
         [JsonProperty("market_tradable_restriction")]
         [JsonConverter(typeof(JsonAsStringConverter<int>))]
-        public int MarketTradableRestriction { get; set; }
+        public int TradableRestriction { get; set; }
 
         [JsonProperty("name")]
         public string Name { get; set; }
@@ -93,7 +96,11 @@ namespace SDroid.SteamTrade.InternalModels.InventoryJson
                 IsMarketable,
                 IsCommodity,
                 IsCurrency,
-                Descriptions?.Select(entity => entity.ToSteamAssetDescriptionEntry()).ToArray() ?? new UserInventoryAssetDescriptionEntry[0],
+                TradableRestriction,
+                MarketableRestriction,
+                (Descriptions?.Select(entity => entity.ToSteamAssetDescriptionEntry()).ToArray() ?? new UserInventoryAssetDescriptionEntry[0]).Concat(
+                    OwnerDescriptions?.Select(entity => entity.ToSteamAssetDescriptionEntry()).ToArray() ?? new UserInventoryAssetDescriptionEntry[0]
+                ).ToArray(),
                 Tags?.Select(tag => tag.ToSteamAssetDescriptionTag()).ToArray() ?? new UserInventoryAssetDescriptionTag[0],
                 Actions?.Select(action => action.ToUserInventoryAssetDescriptionAction()).ToArray() ?? new UserInventoryAssetDescriptionAction[0]
             );

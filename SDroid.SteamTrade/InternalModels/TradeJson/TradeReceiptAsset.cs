@@ -69,14 +69,14 @@ namespace SDroid.SteamTrade.InternalModels.TradeJson
 
         [JsonProperty("market_marketable_restriction")]
         [JsonConverter(typeof(JsonAsStringConverter<int>))]
-        public int MarketMarketableRestriction { get; set; }
+        public int MarketableRestriction { get; set; }
 
         [JsonProperty("market_name")]
         public string MarketName { get; set; }
 
         [JsonProperty("market_tradable_restriction")]
         [JsonConverter(typeof(JsonAsStringConverter<int>))]
-        public int MarketTradableRestriction { get; set; }
+        public int TradableRestriction { get; set; }
 
         [JsonProperty("name")]
         public string Name { get; set; }
@@ -116,6 +116,8 @@ namespace SDroid.SteamTrade.InternalModels.TradeJson
                 IsMarketable,
                 IsCommodity,
                 IsCurrency,
+                TradableRestriction,
+                MarketableRestriction,
                 Descriptions?.Select(entity => entity.ToSteamAssetDescriptionEntry()).ToArray() ?? new UserInventoryAssetDescriptionEntry[0],
                 Tags?.Select(tag => tag.ToSteamAssetDescriptionTag()).ToArray() ?? new UserInventoryAssetDescriptionTag[0],
                 new UserInventoryAssetDescriptionAction[0]

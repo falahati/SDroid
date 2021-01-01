@@ -74,6 +74,8 @@ namespace SDroid.SteamTrade.InternalModels.EconomyServiceAPI
                 !string.IsNullOrWhiteSpace(MarketHashName),
                 !IsCurrency,
                 IsCurrency,
+                0,
+                0,
                 new UserInventoryAssetDescriptionEntry[0],
                 new UserInventoryAssetDescriptionTag[0],
                 OwnerActions?.Select(action => action.ToUserInventoryAssetDescriptionAction()).ToArray() ?? new UserInventoryAssetDescriptionAction[0]
