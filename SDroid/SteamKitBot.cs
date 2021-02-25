@@ -264,33 +264,40 @@ namespace SDroid
                 );
             }
 
-            BotLogger.LogInformation("Starting login process...");
-            LoginDetails = LoginDetails ??
-                           new SteamUser.LogOnDetails
-                           {
-                               Username = BotSettings.Username,
-                               SentryFileHash = BotSettings.SentryFileHash?.Length > 0 ? BotSettings.SentryFileHash : null,
-                               ShouldRememberPassword = true,
-                               LoginKey = BotSettings.LoginKey
-                           };
-
-            if (string.IsNullOrWhiteSpace(LoginDetails.Password) && string.IsNullOrWhiteSpace(LoginDetails.LoginKey))
+            try
             {
-                BotLogger.LogDebug("Requesting account password.");
-                var password = await OnPasswordRequired();
+                BotLogger.LogInformation("Starting login process...");
+                LoginDetails = LoginDetails ??
+                               new SteamUser.LogOnDetails
+                               {
+                                   Username = BotSettings.Username,
+                                   SentryFileHash = BotSettings.SentryFileHash?.Length > 0 ? BotSettings.SentryFileHash : null,
+                                   ShouldRememberPassword = true,
+                                   LoginKey = BotSettings.LoginKey
+                               };
 
-                if (string.IsNullOrWhiteSpace(password))
+                if (string.IsNullOrWhiteSpace(LoginDetails.Password) && string.IsNullOrWhiteSpace(LoginDetails.LoginKey))
                 {
-                    BotLogger.LogError("Bad password provided.");
-                    await OnTerminate().ConfigureAwait(false);
+                    BotLogger.LogDebug("Requesting account password.");
+                    var password = await OnPasswordRequired();
 
-                    return;
+                    if (string.IsNullOrWhiteSpace(password))
+                    {
+                        BotLogger.LogError("Bad password provided.");
+                        await OnTerminate().ConfigureAwait(false);
+
+                        return;
+                    }
+
+                    LoginDetails.Password = password;
                 }
 
-                LoginDetails.Password = password;
+                SteamUser.LogOn(LoginDetails);
             }
-
-            SteamUser.LogOn(LoginDetails);
+            catch (Exception e)
+            {
+                BotLogger.LogError(e, "Requesting account password.");
+            }
         }
 
         private void OnInternalAccountInfoAvailable(SteamUser.AccountInfoCallback accountInfoCallback)
