@@ -194,7 +194,10 @@ namespace SDroid
 
             lock (LocalLock)
             {
-                BotStatus = SteamBotStatus.Ready;
+                if (BotStatus != SteamBotStatus.Faulted)
+                {
+                    BotStatus = SteamBotStatus.Ready;
+                }
             }
         }
 
@@ -796,7 +799,7 @@ namespace SDroid
                         }
                         else
                         {
-                            await OnTerminate().ConfigureAwait(false);
+                            // await OnTerminate().ConfigureAwait(false);
                         }
                     },
                     null,
@@ -861,6 +864,11 @@ namespace SDroid
 
         protected virtual async Task OnTerminate()
         {
+            if (BotStatus == SteamBotStatus.Faulted || BotStatus == SteamBotStatus.Ready)
+            {
+                return;
+            }
+
             BotLogger.LogCritical("Terminating due to a fault. See previous logs.");
 
             lock (LocalLock)

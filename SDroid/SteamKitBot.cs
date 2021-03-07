@@ -761,6 +761,8 @@ namespace SDroid
                         await Task.Delay(TimeSpan.FromSeconds(60)).ConfigureAwait(false);
                     }
                 }
+
+                return;
             }
             catch (Exception e)
             {
