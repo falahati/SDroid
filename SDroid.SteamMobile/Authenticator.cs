@@ -338,7 +338,6 @@ namespace SDroid.SteamMobile
         /// </summary>
         /// <returns></returns>
         /// <exception cref="TokenInvalidException">Provided session token is invalid.</exception>
-        // ReSharper disable once ExceptionNotThrown
         /// <exception cref="TokenExpiredException">Provided session token has expired.</exception>
         /// <exception cref="WebException">Failed to communicate with steam's network or a bad response received.</exception>
         public async Task<Confirmation[]> FetchConfirmations()
@@ -354,10 +353,12 @@ namespace SDroid.SteamMobile
                 )
             ).ConfigureAwait(false);
 
-            /*So you're going to see this abomination and you're going to be upset.
+            /*
+              So you're going to see this abomination and you're going to be upset.
               It's understandable. But the thing is, regex for HTML -- while awful -- makes this way faster than parsing a DOM, plus we don't need another library.
               And because the data is always in the same place and same format... It's not as if we're trying to naturally understand HTML here. Just extract strings.
-              I'm sorry. */
+              I'm sorry. 
+            */
 
             if (response == null || !ConfirmationRegex.IsMatch(response))
             {

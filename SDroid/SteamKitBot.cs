@@ -117,7 +117,7 @@ namespace SDroid
                 BotStatus = SteamBotStatus.Connecting;
             }
 
-            BotLogger.LogInformation("Starting bot...");
+            BotLogger.LogInformation("[{0}] Starting bot...", SteamId?.ConvertToUInt64());
 
             CancellationTokenSource = new CancellationTokenSource();
             Task.Factory.StartNew(
@@ -126,7 +126,7 @@ namespace SDroid
                 TaskCreationOptions.LongRunning | TaskCreationOptions.RunContinuationsAsynchronously
             );
 
-            BotLogger.LogDebug("Connecting to steam network...");
+            BotLogger.LogDebug("[{0}] Connecting to steam network...", SteamId?.ConvertToUInt64());
             SteamClient.Connect();
 
             return Task.CompletedTask;
@@ -135,7 +135,7 @@ namespace SDroid
         /// <inheritdoc />
         public override async Task StopBot()
         {
-            BotLogger.LogDebug("Disconnecting from Steam network...");
+            BotLogger.LogDebug("[{0}] Disconnecting from Steam network...", SteamId?.ConvertToUInt64());
             SteamClient?.Disconnect();
             await base.StopBot().ConfigureAwait(false);
         }
@@ -198,17 +198,19 @@ namespace SDroid
                     }
                 }
 
-                BotLogger.LogDebug("Checking session...");
+                BotLogger.LogDebug("[{0}] Checking session...", SteamId?.ConvertToUInt64());
 
-                if (!await WebAccess.VerifySession().ConfigureAwait(false))
+                if (await WebAccess.VerifySession().ConfigureAwait(false))
                 {
-                    BotLogger.LogDebug("Session expired. Requesting new WebAPI user nonce.");
-                    await SteamUser.RequestWebAPIUserNonce().ToTask().ConfigureAwait(false);
+                    return;
                 }
+
+                BotLogger.LogDebug("[{0}] Session expired. Requesting new WebAPI user nonce.", SteamId?.ConvertToUInt64());
+                await SteamUser.RequestWebAPIUserNonce().ToTask().ConfigureAwait(false);
             }
             catch (Exception e)
             {
-                BotLogger.LogError(e, e.Message);
+                BotLogger.LogError(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
                 await OnLoggedOut().ConfigureAwait(false);
                 await OnTerminate().ConfigureAwait(false);
             }
@@ -239,7 +241,7 @@ namespace SDroid
                 }
             }
 
-            BotLogger.LogWarning("Login stalled, trying again.");
+            BotLogger.LogWarning("[{0}] Login stalled, trying again.", SteamId?.ConvertToUInt64());
             InternalInitializeLogin().Wait();
         }
 
@@ -266,7 +268,7 @@ namespace SDroid
 
             try
             {
-                BotLogger.LogInformation("Starting login process...");
+                BotLogger.LogInformation("[{0}] Starting login process...", SteamId?.ConvertToUInt64());
                 LoginDetails = LoginDetails ??
                                new SteamUser.LogOnDetails
                                {
@@ -278,12 +280,12 @@ namespace SDroid
 
                 if (string.IsNullOrWhiteSpace(LoginDetails.Password) && string.IsNullOrWhiteSpace(LoginDetails.LoginKey))
                 {
-                    BotLogger.LogDebug("Requesting account password.");
+                    BotLogger.LogDebug("[{0}] Requesting account password.", SteamId?.ConvertToUInt64());
                     var password = await OnPasswordRequired();
 
                     if (string.IsNullOrWhiteSpace(password))
                     {
-                        BotLogger.LogError("Bad password provided.");
+                        BotLogger.LogError("[{0}] Bad password provided.", SteamId?.ConvertToUInt64());
                         await OnTerminate().ConfigureAwait(false);
 
                         return;
@@ -296,20 +298,20 @@ namespace SDroid
             }
             catch (Exception e)
             {
-                BotLogger.LogError(e, "Requesting account password.");
+                BotLogger.LogError(e, "[{0}] Requesting account password.", SteamId?.ConvertToUInt64());
             }
         }
 
         private void OnInternalAccountInfoAvailable(SteamUser.AccountInfoCallback accountInfoCallback)
         {
-            BotLogger.LogTrace("Account info available.");
+            BotLogger.LogTrace("[{0}] Account info available.", SteamId?.ConvertToUInt64());
             OnAccountInfoAvailable(accountInfoCallback);
         }
 
 
         private void OnInternalSteamClientConnected(SteamClient.ConnectedCallback connectedCallback)
         {
-            BotLogger.LogInformation("Connected to the steam network.");
+            BotLogger.LogInformation("[{0}] Connected to the steam network.", SteamId?.ConvertToUInt64());
             ConnectionBackoff.Reset();
 
             lock (LocalLock)
@@ -322,7 +324,10 @@ namespace SDroid
 
         private void OnInternalSteamClientDisconnect(SteamClient.DisconnectedCallback disconnectedCallback)
         {
-            BotLogger.LogTrace("Disconnected from the steam network. SteamClient.DisconnectedCallback.UserInitiated = `{0}`");
+            BotLogger.LogTrace("[{0}] Disconnected from the steam network. SteamClient.DisconnectedCallback.UserInitiated = `{1}`",
+                SteamId?.ConvertToUInt64(),
+                disconnectedCallback.UserInitiated
+            );
 
             if (!disconnectedCallback.UserInitiated)
             {
@@ -339,7 +344,7 @@ namespace SDroid
                 OnDisconnected();
                 ConnectionBackoff.Delay().Wait();
 
-                BotLogger.LogInformation("Reconnecting to the steam network...");
+                BotLogger.LogInformation("[{0}] Reconnecting to the steam network...", SteamId?.ConvertToUInt64());
                 SteamClient.Connect();
             }
             else
@@ -350,7 +355,11 @@ namespace SDroid
 
         private void OnInternalSteamUserLoggedOff(SteamUser.LoggedOffCallback loggedOffCallback)
         {
-            BotLogger.LogTrace("SteamUser.LoggedOffCallback.Result = `{0}`");
+            BotLogger.LogTrace(
+                "[{0}] SteamUser.LoggedOffCallback.Result = `{1}`",
+                SteamId?.ConvertToUInt64(),
+                loggedOffCallback.Result
+            );
 
             lock (LocalLock)
             {
@@ -405,14 +414,15 @@ namespace SDroid
             }
 
             BotLogger.LogTrace(
-                "SteamUser.LoggedOnCallback.Result = `{0}`, SteamUser.LoggedOnCallback.ExtendedResult = `{1}`",
+                "[{0}] SteamUser.LoggedOnCallback.Result = `{1}`, SteamUser.LoggedOnCallback.ExtendedResult = `{2}`",
+                SteamId?.ConvertToUInt64(),
                 loggedOnCallback.Result,
                 loggedOnCallback.ExtendedResult
             );
 
             if (loggedOnCallback.Result == EResult.OK)
             {
-                BotLogger.LogTrace("Retriving WebAPI and WebAccess session.");
+                BotLogger.LogTrace("[{0}] Retriving WebAPI and WebAccess session.", SteamId?.ConvertToUInt64());
                 var session = SteamClient.AuthenticateWebSession(loggedOnCallback.WebAPIUserNonce).Result;
 
                 if (session != null && session.HasEnoughInfo())
@@ -427,19 +437,19 @@ namespace SDroid
                         ).VerifySession().Result
                     )
                     {
-                        BotLogger.LogTrace("Session is valid.");
+                        BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
                         OnNewWebSessionAvailable(session).Wait();
                         LoginBackoff.Reset();
                     }
                     else
                     {
-                        BotLogger.LogDebug("Bad session retrieved. Requesting a new WebAPI user nonce.");
+                        BotLogger.LogDebug("[{0}] Bad session retrieved. Requesting a new WebAPI user nonce.", SteamId?.ConvertToUInt64());
                         SteamUser.RequestWebAPIUserNonce();
                     }
                 }
                 else
                 {
-                    BotLogger.LogDebug("Failed to retrieve WebAccess session. Trying to recover session.");
+                    BotLogger.LogDebug("[{0}] Failed to retrieve WebAccess session. Trying to recover session.", SteamId?.ConvertToUInt64());
 
                     if (RecoverWebSession().Result)
                     {
@@ -447,7 +457,7 @@ namespace SDroid
                     }
                     else
                     {
-                        BotLogger.LogDebug("Forcefully starting a new login process.");
+                        BotLogger.LogDebug("[{0}] Forcefully starting a new login process.", SteamId?.ConvertToUInt64());
                         InternalInitializeLogin().Wait();
                     }
                 }
@@ -455,7 +465,7 @@ namespace SDroid
                 return;
             }
 
-            BotLogger.LogTrace("Clearing saved LoginKey and SentryFile data.");
+            BotLogger.LogTrace("[{0}] Clearing saved LoginKey and SentryFile data.", SteamId?.ConvertToUInt64());
             LoginDetails.LoginKey = null;
             LoginDetails.SentryFileHash = null;
 
@@ -467,12 +477,12 @@ namespace SDroid
 
             if (loggedOnCallback.Result == EResult.AccountLoginDeniedNeedTwoFactor)
             {
-                BotLogger.LogDebug("Requesting authenticator code.");
+                BotLogger.LogDebug("[{0}] Requesting authenticator code.", SteamId?.ConvertToUInt64());
                 var mobileAuthCode = OnAuthenticatorCodeRequired().Result;
 
                 if (string.IsNullOrEmpty(mobileAuthCode))
                 {
-                    BotLogger.LogError("Bad authenticator code provided.");
+                    BotLogger.LogError("[{0}] Bad authenticator code provided.", SteamId?.ConvertToUInt64());
                     OnTerminate().Wait();
 
                     return;
@@ -483,15 +493,15 @@ namespace SDroid
             }
             else if (loggedOnCallback.Result == EResult.TwoFactorCodeMismatch)
             {
-                BotLogger.LogTrace("Realigning authenticator clock.");
+                BotLogger.LogTrace("[{0}] Realigning authenticator clock.", SteamId?.ConvertToUInt64());
                 SteamTime.ReAlignTime().Wait();
 
-                BotLogger.LogDebug("Requesting authenticator code.");
+                BotLogger.LogDebug("[{0}] Requesting authenticator code.", SteamId?.ConvertToUInt64());
                 var mobileAuthCode = OnAuthenticatorCodeRequired().Result;
 
                 if (string.IsNullOrEmpty(mobileAuthCode))
                 {
-                    BotLogger.LogError("Bad authenticator code provided.");
+                    BotLogger.LogError("[{0}] Bad authenticator code provided.", SteamId?.ConvertToUInt64());
                     OnTerminate().Wait();
 
                     return;
@@ -505,12 +515,12 @@ namespace SDroid
                 loggedOnCallback.Result == EResult.InvalidLoginAuthCode
             )
             {
-                BotLogger.LogDebug("Requesting email verification code.");
+                BotLogger.LogDebug("[{0}] Requesting email verification code.", SteamId?.ConvertToUInt64());
                 var emailAuthCode = OnEmailCodeRequired().Result;
 
                 if (string.IsNullOrEmpty(emailAuthCode))
                 {
-                    BotLogger.LogError("Bad email verification code provided.");
+                    BotLogger.LogError("[{0}] Bad email verification code provided.", SteamId?.ConvertToUInt64());
                     OnTerminate().Wait();
 
                     return;
@@ -521,12 +531,12 @@ namespace SDroid
             }
             else if (loggedOnCallback.Result == EResult.InvalidPassword)
             {
-                BotLogger.LogDebug("Requesting account password.");
+                BotLogger.LogDebug("[{0}] Requesting account password.", SteamId?.ConvertToUInt64());
                 var password = OnPasswordRequired().Result;
 
                 if (string.IsNullOrWhiteSpace(password))
                 {
-                    BotLogger.LogError("Bad password provided.");
+                    BotLogger.LogError("[{0}] Bad password provided.", SteamId?.ConvertToUInt64());
                     OnTerminate().Wait();
 
                     return;
@@ -555,14 +565,14 @@ namespace SDroid
 
             SteamUser.AcceptNewLoginKey(loginKeyCallback);
 
-            BotLogger.LogInformation("Login key exchange completed.");
+            BotLogger.LogInformation("[{0}] Login key exchange completed.", SteamId?.ConvertToUInt64());
         }
 
         private void OnInternalSteamUserNewWebApiUserNonce(SteamUser.WebAPIUserNonceCallback webAPIUserNonceCallback)
         {
             if (webAPIUserNonceCallback.Result == EResult.OK)
             {
-                BotLogger.LogTrace("New WebAPI web nonce received. Retriving WebAPI and WebAccess session.");
+                BotLogger.LogTrace("[{0}] New WebAPI web nonce received. Retriving WebAPI and WebAccess session.", SteamId?.ConvertToUInt64());
                 var session = SteamClient.AuthenticateWebSession(webAPIUserNonceCallback.Nonce).Result;
 
                 if (session != null && session.HasEnoughInfo())
@@ -578,19 +588,19 @@ namespace SDroid
                             .VerifySession().Result
                     )
                     {
-                        BotLogger.LogTrace("Session is valid.");
+                        BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
                         LoginBackoff.Reset();
                         OnNewWebSessionAvailable(session).Wait();
                     }
                     else
                     {
-                        BotLogger.LogDebug("Session is invalid. Requesting a new WebAPI user nonce.");
+                        BotLogger.LogDebug("[{0}] Session is invalid. Requesting a new WebAPI user nonce.", SteamId?.ConvertToUInt64());
                         SteamUser.RequestWebAPIUserNonce();
                     }
                 }
                 else
                 {
-                    BotLogger.LogWarning("Failed to retrieve WebAccess session.");
+                    BotLogger.LogWarning("[{0}] Failed to retrieve WebAccess session.", SteamId?.ConvertToUInt64());
                 }
             }
         }
@@ -599,7 +609,8 @@ namespace SDroid
             SteamUser.UpdateMachineAuthCallback machineAuthCallback)
         {
             BotLogger.LogTrace(
-                "Machine authentication SentryFile update request received. SteamUser.UpdateMachineAuthCallback.FileName = `{0}`",
+                "[{0}] Machine authentication SentryFile update request received. SteamUser.UpdateMachineAuthCallback.FileName = `{1}`",
+                SteamId?.ConvertToUInt64(),
                 machineAuthCallback.FileName
             );
 
@@ -653,12 +664,12 @@ namespace SDroid
             BotSettings.SentryFile = sentryFile;
             BotSettings.SaveSettings();
 
-            BotLogger.LogDebug("SentryFile updated.");
+            BotLogger.LogDebug("[{0}] SentryFile updated.", SteamId?.ConvertToUInt64());
         }
 
         private void OnInternalWalletInfoAvailable(SteamUser.WalletInfoCallback walletInfoCallback)
         {
-            BotLogger.LogTrace("Account wallet information available.");
+            BotLogger.LogTrace("[{0}] Account wallet information available.", SteamId?.ConvertToUInt64());
             OnWalletInfoAvailable(walletInfoCallback);
         }
 
@@ -669,11 +680,11 @@ namespace SDroid
                 // Check if the current session is still valid
                 if (WebAccess != null)
                 {
-                    BotLogger.LogTrace("Trying current session.");
+                    BotLogger.LogTrace("[{0}] Trying current session.", SteamId?.ConvertToUInt64());
 
                     if (await WebAccess.VerifySession().ConfigureAwait(false))
                     {
-                        BotLogger.LogTrace("Session is valid.");
+                        BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
                         await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
 
                         return true;
@@ -684,7 +695,7 @@ namespace SDroid
                 // ReSharper disable once SuspiciousTypeConversion.Global
                 if (this is IAuthenticatorBot authenticatorController)
                 {
-                    BotLogger.LogTrace("Trying authenticator session.");
+                    BotLogger.LogTrace("[{0}] Trying authenticator session.", SteamId?.ConvertToUInt64());
 
                     if (authenticatorController.BotAuthenticatorSettings?.Authenticator?.Session != null)
                     {
@@ -696,7 +707,7 @@ namespace SDroid
                             string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy)
                         );
 
-                        BotLogger.LogTrace("Refreshing authenticator session.");
+                        BotLogger.LogTrace("[{0}] Refreshing authenticator session.", SteamId?.ConvertToUInt64());
 
                         if (
                             await authenticatorController.BotAuthenticatorSettings.Authenticator.Session
@@ -705,9 +716,8 @@ namespace SDroid
                         {
                             if (await webAccess.VerifySession().ConfigureAwait(false))
                             {
-                                BotLogger.LogTrace("Session is valid.");
-                                WebAccess = webAccess;
-                                await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
+                                BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
+                                await OnNewWebSessionAvailable(webAccess.Session).ConfigureAwait(false);
 
                                 return true;
                             }
@@ -717,26 +727,55 @@ namespace SDroid
 
                 if (BotSettings.Session != null && BotSettings.Session.HasEnoughInfo() && WebAccess == null)
                 {
-                    BotLogger.LogTrace("Trying last saved session.");
-                    var webAccess = new SteamWebAccess(
-                        BotSettings.Session,
-                        IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress) ? ipAddress : IPAddress.Any,
-                        string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy)
-                    );
-
-                    if (await webAccess.VerifySession().ConfigureAwait(false))
+                    if (this is IAuthenticatorBot)
                     {
-                        BotLogger.LogTrace("Session is valid.");
-                        WebAccess = webAccess;
-                        await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
+                        BotLogger.LogTrace("[{0}] Trying last saved session as authenticator session.", SteamId?.ConvertToUInt64());
 
-                        return true;
+                        var webAccess = new SteamMobileWebAccess(
+                            BotSettings.Session is MobileSession mobileSession ? mobileSession : new MobileSession(
+                                BotSettings.Session.RememberLoginToken,
+                                BotSettings.Session.SteamId,
+                                BotSettings.Session.SteamLogin,
+                                BotSettings.Session.SteamLoginSecure,
+                                BotSettings.Session.SessionId,
+                                BotSettings.Session.RememberLoginToken,
+                                BotSettings.Session.SteamMachineAuthenticationTokens
+                            ),
+                            IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress) ? ipAddress : IPAddress.Any,
+                            string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy)
+                        );
+
+                        if (await webAccess.VerifySession().ConfigureAwait(false))
+                        {
+                            BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
+                            await OnNewWebSessionAvailable(webAccess.Session).ConfigureAwait(false);
+
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        BotLogger.LogTrace("[{0}] Trying last saved session.", SteamId?.ConvertToUInt64());
+
+                        var webAccess = new SteamWebAccess(
+                            BotSettings.Session,
+                            IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress) ? ipAddress : IPAddress.Any,
+                            string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy)
+                        );
+
+                        if (await webAccess.VerifySession().ConfigureAwait(false))
+                        {
+                            BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
+                            await OnNewWebSessionAvailable(webAccess.Session).ConfigureAwait(false);
+
+                            return true;
+                        }
                     }
                 }
             }
             catch (Exception e)
             {
-                BotLogger.LogWarning(e, "Failed to recover WebSession, error: {0}", e.Message);
+                BotLogger.LogWarning(e, "[{0}] Failed to recover WebSession, Error: {1}", SteamId?.ConvertToUInt64(), e.Message);
             }
 
             return false;
@@ -756,8 +795,8 @@ namespace SDroid
                     }
                     catch (WebException e)
                     {
-                        BotLogger.LogWarning(e, e.Message);
-                        BotLogger.LogDebug("Sleeping for 60 seconds.");
+                        BotLogger.LogWarning(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
+                        BotLogger.LogDebug("[{0}] Sleeping for 60 seconds.", SteamId?.ConvertToUInt64());
                         await Task.Delay(TimeSpan.FromSeconds(60)).ConfigureAwait(false);
                     }
                 }
@@ -766,7 +805,7 @@ namespace SDroid
             }
             catch (Exception e)
             {
-                BotLogger.LogError(e, e.Message);
+                BotLogger.LogError(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
             }
 
             await OnTerminate().ConfigureAwait(false);
