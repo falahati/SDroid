@@ -1,16 +1,18 @@
 ﻿using System;
 using System.Threading.Tasks;
 using ConsoleUtilities;
+using Microsoft.Extensions.Logging;
 using SDroid;
 using SDroid.Interfaces;
 using SDroid.SteamTrade;
 
 namespace SDroidTest
 {
+    // ReSharper disable once InconsistentNaming
     internal class TradeOfferBot : SteamBot, ITradeOfferBot
     {
-        /// <inheritdoc />
-        public TradeOfferBot(TradeOfferBotSettings settings, Logger botLogger) : base(settings, botLogger)
+        // ReSharper disable once SuggestBaseTypeForParameter
+        public TradeOfferBot(TradeOfferBotSettings settings, ILogger botLogger) : base(settings, botLogger)
         {
         }
 
@@ -99,18 +101,16 @@ namespace SDroidTest
                 if (tradeOffer != null)
                 {
                     await tradeOfferManager.Accept(tradeOffer).ConfigureAwait(false);
-                    await BotLogger.Info(nameof(AcceptTradeOfferById), "Requested to accept trade offer #{0}",
-                        tradeOffer.TradeOfferId).ConfigureAwait(false);
+                    BotLogger.LogInformation("Requested to accept trade offer #{0}", tradeOffer.TradeOfferId);
                 }
                 else
                 {
-                    await BotLogger.Info(nameof(AcceptTradeOfferById), "Trade offer #{0} not found.", tradeOfferId)
-                        .ConfigureAwait(false);
+                    BotLogger.LogInformation("Trade offer #{0} not found.", tradeOfferId);
                 }
             }
             catch (Exception e)
             {
-                await BotLogger.Error(nameof(AcceptTradeOfferById), e.Message).ConfigureAwait(false);
+                BotLogger.LogError(e, e.Message);
             }
         }
 
@@ -124,18 +124,16 @@ namespace SDroidTest
                 if (tradeOffer != null)
                 {
                     await tradeOfferManager.Decline(tradeOffer).ConfigureAwait(false);
-                    await BotLogger.Info(nameof(DeclineTradeOfferById), "Requested to decline trade offer #{0}",
-                        tradeOffer.TradeOfferId).ConfigureAwait(false);
+                    BotLogger.LogInformation("Requested to decline trade offer #{0}", tradeOffer.TradeOfferId);
                 }
                 else
                 {
-                    await BotLogger.Info(nameof(DeclineTradeOfferById), "Trade offer #{0} not found.", tradeOfferId)
-                        .ConfigureAwait(false);
+                    BotLogger.LogInformation("Trade offer #{0} not found.", tradeOfferId);
                 }
             }
             catch (Exception e)
             {
-                await BotLogger.Error(nameof(DeclineTradeOfferById), e.Message).ConfigureAwait(false);
+                BotLogger.LogError(e, e.Message);
             }
         }
 
@@ -148,7 +146,7 @@ namespace SDroidTest
         /// <inheritdoc />
         protected override async Task OnLoggedIn()
         {
-            await BotLogger.Info(nameof(OnLoggedIn), "Retrieving bot's inventory.").ConfigureAwait(false);
+            BotLogger.LogInformation("Retrieving bot's inventory.");
 
             if (MyInventory == null)
             {

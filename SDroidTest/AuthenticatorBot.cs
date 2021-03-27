@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ConsoleUtilities;
+using Microsoft.Extensions.Logging;
 using SDroid;
 using SDroid.Interfaces;
 using SDroid.SteamMobile;
@@ -11,7 +12,8 @@ namespace SDroidTest
 {
     internal class AuthenticatorBot : SteamBot, IAuthenticatorBot
     {
-        public AuthenticatorBot(AuthenticatorBotSettings settings, Logger logger) : base(settings, logger)
+        // ReSharper disable once SuggestBaseTypeForParameter
+        public AuthenticatorBot(AuthenticatorBotSettings settings, ILogger logger) : base(settings, logger)
         {
         }
 
@@ -100,20 +102,17 @@ namespace SDroidTest
                     if (confirmation != null)
                     {
                         await authenticator.AcceptConfirmation(confirmation).ConfigureAwait(false);
-                        await BotLogger.Info(nameof(ConfirmByTradeOfferId), "Requested to confirm trade offer #{0}",
-                            tradeOfferId).ConfigureAwait(false);
+                        BotLogger.LogInformation("Requested to confirm trade offer #{0}", tradeOfferId);
 
                         return;
                     }
                 }
 
-                await BotLogger.Info(nameof(ConfirmByTradeOfferId), "Confirmation for trade offer #{0} not found.",
-                        tradeOfferId)
-                    .ConfigureAwait(false);
+                BotLogger.LogInformation("Confirmation for trade offer #{0} not found.", tradeOfferId);
             }
             catch (Exception e)
             {
-                await BotLogger.Error(nameof(ConfirmByTradeOfferId), e.Message).ConfigureAwait(false);
+                BotLogger.LogError(e, e.Message);
             }
         }
 
@@ -133,20 +132,17 @@ namespace SDroidTest
                     if (confirmation != null)
                     {
                         await authenticator.DenyConfirmation(confirmation).ConfigureAwait(false);
-                        await BotLogger.Info(nameof(DenyByTradeOfferId), "Requested to deny trade offer #{0}",
-                            tradeOfferId).ConfigureAwait(false);
+                        BotLogger.LogInformation(nameof(DenyByTradeOfferId), "Requested to deny trade offer #{0}", tradeOfferId);
 
                         return;
                     }
                 }
 
-                await BotLogger.Info(nameof(DenyByTradeOfferId), "Confirmation for trade offer #{0} not found.",
-                        tradeOfferId)
-                    .ConfigureAwait(false);
+                BotLogger.LogInformation("Confirmation for trade offer #{0} not found.", tradeOfferId);
             }
             catch (Exception e)
             {
-                await BotLogger.Error(nameof(DenyByTradeOfferId), e.Message).ConfigureAwait(false);
+                BotLogger.LogError(e, e.Message);
             }
         }
 

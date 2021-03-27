@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using ConsoleUtilities;
+using Microsoft.Extensions.Logging;
 using SDroid.SteamMobile;
 using SteamKit2;
 
@@ -10,6 +11,8 @@ namespace SDroidTest
 {
     internal class Program
     {
+        private static ILoggerFactory _loggerFactory = LoggerFactory.Create((l) => l.AddConsole());
+
         private static void ClearSettings()
         {
             ConsoleWriter.Default.PrintCaption("Clear Settings");
@@ -115,7 +118,7 @@ namespace SDroidTest
             ConsoleWriter.Default.PrintMessage(
                 "Initializing terminal, press enter for the list of valid commands.");
 
-            using (var bot = new AuthenticatorBot(SettingsExtension.Load<AuthenticatorBotSettings>(), new Logger()))
+            using (var bot = new AuthenticatorBot(SettingsExtension.Load<AuthenticatorBotSettings>(), _loggerFactory.CreateLogger<AuthenticatorBot>()))
             {
                 bot.StartBot().Wait();
 
@@ -214,7 +217,7 @@ namespace SDroidTest
         {
             ConsoleWriter.Default.PrintCaption("SteamKitBot");
 
-            using (var bot = new SteamKitBot(SettingsExtension.Load<SteamKitBotSettings>(), new Logger()))
+            using (var bot = new SteamKitBot(SettingsExtension.Load<SteamKitBotSettings>(), _loggerFactory.CreateLogger<SteamKitBot>()))
             {
                 bot.StartBot().Wait();
 
@@ -322,7 +325,7 @@ namespace SDroidTest
         {
             ConsoleWriter.Default.PrintCaption("TradeOfferBot");
 
-            using (var bot = new TradeOfferBot(SettingsExtension.Load<TradeOfferBotSettings>(), new Logger()))
+            using (var bot = new TradeOfferBot(SettingsExtension.Load<TradeOfferBotSettings>(), _loggerFactory.CreateLogger<TradeOfferBot>()))
             {
                 bot.StartBot().Wait();
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using ConsoleUtilities;
+using Microsoft.Extensions.Logging;
 using SDroid;
 using SteamKit2;
 
@@ -8,12 +9,12 @@ namespace SDroidTest
 {
     internal class SteamKitBot : SDroid.SteamKitBot
     {
-        /// <inheritdoc />
-        public SteamKitBot(SteamKitBotSettings settings, IBotLogger botLogger) : base(settings, botLogger)
+        // ReSharper disable once SuggestBaseTypeForParameter
+        public SteamKitBot(SteamKitBotSettings settings, ILogger botLogger) : base(settings, botLogger)
         {
             SubscribedCallbacks.Add(
-                CallbackManager.Subscribe<SteamFriends.FriendMsgCallback>(
-                    OnSteamFriendsMessage));
+                CallbackManager.Subscribe<SteamFriends.FriendMsgCallback>(OnSteamFriendsMessage)
+            );
         }
 
         public new SteamKitBotSettings BotSettings
@@ -64,7 +65,7 @@ namespace SDroidTest
         /// <inheritdoc />
         protected override Task OnLoggedIn()
         {
-            BotLogger.Info(nameof(OnLoggedIn), "Changing state to Online.");
+            BotLogger.LogInformation("Changing state to Online.");
             SteamFriends.SetPersonaState(EPersonaState.Online);
 
             return Task.CompletedTask;
@@ -79,12 +80,14 @@ namespace SDroidTest
         /// <inheritdoc />
         protected override Task OnWalletInfoAvailable(SteamUser.WalletInfoCallback walletInfo)
         {
-            ConsoleWriter.Default.WriteObject(new
-            {
-                walletInfo.Balance,
-                walletInfo.Currency,
-                walletInfo.HasWallet
-            });
+            ConsoleWriter.Default.WriteObject(
+                new
+                {
+                    walletInfo.Balance,
+                    walletInfo.Currency,
+                    walletInfo.HasWallet
+                }
+            );
 
             return Task.CompletedTask;
         }
@@ -94,27 +97,32 @@ namespace SDroidTest
             switch (friendMsgCallback.EntryType)
             {
                 case EChatEntryType.ChatMsg:
-                    BotLogger
-                        .Info(nameof(OnSteamFriendsMessage), "New message from {0}. Message = {1}",
-                            friendMsgCallback.Sender,
-                            friendMsgCallback.Message);
-
+                    BotLogger.LogInformation(
+                        "New message from {0}. Message = {1}",
+                        friendMsgCallback.Sender,
+                        friendMsgCallback.Message
+                    );
                     break;
                 case EChatEntryType.HistoricalChat:
-                    BotLogger.Info(nameof(OnSteamFriendsMessage), "Historic message from {0}. Message = {1}",
-                        friendMsgCallback.Sender, friendMsgCallback.Message);
-
+                    BotLogger.LogInformation(
+                        "Historic message from {0}. Message = {1}",
+                        friendMsgCallback.Sender,
+                        friendMsgCallback.Message
+                    );
                     break;
                 case EChatEntryType.InviteGame:
-                    BotLogger
-                        .Info(nameof(OnSteamFriendsMessage), "Invited to game by {0}. Message = {1}",
-                            friendMsgCallback.Sender, friendMsgCallback.Message);
-
+                    BotLogger.LogInformation(
+                            "Invited to game by {0}. Message = {1}",
+                            friendMsgCallback.Sender,
+                            friendMsgCallback.Message
+                        );
                     break;
                 default:
-                    BotLogger.Info(nameof(OnSteamFriendsMessage), "Chat event by {0}. EChatEntryType = {1}",
-                        friendMsgCallback.Sender, friendMsgCallback.EntryType);
-
+                    BotLogger.LogInformation(
+                        "Chat event by {0}. EChatEntryType = {1}",
+                        friendMsgCallback.Sender,
+                        friendMsgCallback.EntryType
+                    );
                     break;
             }
         }

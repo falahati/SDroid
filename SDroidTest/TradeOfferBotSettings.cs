@@ -4,6 +4,7 @@ using SDroid.SteamWeb;
 
 namespace SDroidTest
 {
+    // ReSharper disable once InconsistentNaming
     public class TradeOfferBotSettings : IBotSettings, ITradeOfferBotSettings
     {
         /// <inheritdoc />
