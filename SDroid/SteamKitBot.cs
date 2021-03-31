@@ -75,7 +75,7 @@ namespace SDroid
 
         protected override SteamID SteamId
         {
-            get => SteamClient.SteamID ?? base.SteamId;
+            get => SteamClient?.SteamID ?? base.SteamId;
         }
 
         protected SteamUser SteamUser { get; set; }
