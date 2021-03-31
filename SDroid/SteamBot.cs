@@ -533,6 +533,26 @@ namespace SDroid
                     BotLogger.LogWarning(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
                     if (e is AggregateException aggregatedException && aggregatedException.InnerExceptions.Any(i => i.Message.Contains("(302)")))
                     {
+                        if (
+                            authenticatorBot.WebAccess.Session is MobileSession mobileSession &&
+                            authenticatorBot.WebAccess is SteamMobileWebAccess mobileWebAccess)
+                        {
+                            try
+                            {
+                                BotLogger.LogDebug("[{0}] Refreshing authenticator session...", SteamId?.ConvertToUInt64());
+
+                                if (await mobileSession.RefreshSession(mobileWebAccess))
+                                {
+                                    await OnNewWebSessionAvailable(mobileSession);
+                                    return;
+                                }
+                            }
+                            catch (Exception e2)
+                            {
+                                BotLogger.LogWarning(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e2.Message);
+                            }
+                        }
+
                         BotLogger.LogDebug("[{0}] Session expired. Forcefully starting a new login process.", SteamId?.ConvertToUInt64());
                         await BotLogin().ConfigureAwait(false);
                     }
@@ -594,6 +614,28 @@ namespace SDroid
                 catch (Exception e)
                 {
                     BotLogger.LogWarning(e, "[{0}] {1}", SteamId?.ConvertToUInt64() , e.Message);
+                }
+
+                if (WebAccess is SteamMobileWebAccess mobileWebAccess && mobileWebAccess.Session is MobileSession mobileSession)
+                {
+                    BotLogger.LogDebug("[{0}] Trying to recover session from authenticator...", SteamId?.ConvertToUInt64());
+                    try
+                    {
+                        if (!await mobileSession.RefreshSession(mobileWebAccess))
+                        {
+                            throw new Exception("Failed to recover session from authenticator.");
+                        }
+
+                        if (await WebAccess.VerifySession().ConfigureAwait(false))
+                        {
+                            await OnNewWebSessionAvailable(mobileSession);
+                            return;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        BotLogger.LogWarning(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
+                    }
                 }
 
                 BotLogger.LogDebug("[{0}] Session expired. Forcefully starting a new login process.", SteamId?.ConvertToUInt64());
