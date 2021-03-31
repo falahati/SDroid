@@ -550,6 +550,11 @@ namespace SDroid
                 // LoginBackoff.Reset(); allow backoff
                 LoginDetails.Password = password;
             }
+            else if (loggedOnCallback.Result == EResult.ServiceUnavailable || loggedOnCallback.Result == EResult.TryAnotherCM)
+            {
+                OnTerminate().Wait();
+                return;
+            }
             else if (loggedOnCallback.Result == EResult.RateLimitExceeded)
             {
                 // ignore
