@@ -422,6 +422,11 @@ namespace SDroid
 
             if (loggedOnCallback.Result == EResult.OK)
             {
+                lock (LocalLock)
+                {
+                    StalledLoginCheckTimer?.Dispose();
+                }
+
                 BotLogger.LogTrace("[{0}] Retriving WebAPI and WebAccess session.", SteamId?.ConvertToUInt64());
                 var session = SteamClient.AuthenticateWebSession(loggedOnCallback.WebAPIUserNonce).Result;
 
