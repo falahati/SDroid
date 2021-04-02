@@ -16,7 +16,7 @@ namespace SDroid.Helpers
 
         public async Task Delay()
         {
-            var delay = (Math.Pow(2, Attempts) - 1) * _backOffFactor;
+            var delay = Math.Max(Math.Min((Math.Pow(2, Attempts) - 1) * _backOffFactor, int.MaxValue), 0);
 
             if (delay > 0.016)
             {
