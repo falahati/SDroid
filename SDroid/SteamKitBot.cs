@@ -135,6 +135,10 @@ namespace SDroid
         /// <inheritdoc />
         public override async Task StopBot()
         {
+            lock (LocalLock)
+            {
+                StalledLoginCheckTimer?.Dispose();
+            }
             BotLogger.LogDebug("[{0}] Disconnecting from Steam network...", SteamId?.ConvertToUInt64());
             SteamClient?.Disconnect();
             await base.StopBot().ConfigureAwait(false);
@@ -211,6 +215,10 @@ namespace SDroid
             catch (Exception e)
             {
                 BotLogger.LogError(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
+                lock (LocalLock)
+                {
+                    StalledLoginCheckTimer?.Dispose();
+                }
                 await OnLoggedOut().ConfigureAwait(false);
                 await OnTerminate().ConfigureAwait(false);
             }
@@ -286,6 +294,10 @@ namespace SDroid
                     if (string.IsNullOrWhiteSpace(password))
                     {
                         BotLogger.LogError("[{0}] Bad password provided.", SteamId?.ConvertToUInt64());
+                        lock (LocalLock)
+                        {
+                            StalledLoginCheckTimer?.Dispose();
+                        }
                         await OnTerminate().ConfigureAwait(false);
 
                         return;
@@ -488,6 +500,10 @@ namespace SDroid
                 if (string.IsNullOrEmpty(mobileAuthCode))
                 {
                     BotLogger.LogError("[{0}] Bad authenticator code provided.", SteamId?.ConvertToUInt64());
+                    lock (LocalLock)
+                    {
+                        StalledLoginCheckTimer?.Dispose();
+                    }
                     OnTerminate().Wait();
 
                     return;
@@ -507,6 +523,10 @@ namespace SDroid
                 if (string.IsNullOrEmpty(mobileAuthCode))
                 {
                     BotLogger.LogError("[{0}] Bad authenticator code provided.", SteamId?.ConvertToUInt64());
+                    lock (LocalLock)
+                    {
+                        StalledLoginCheckTimer?.Dispose();
+                    }
                     OnTerminate().Wait();
 
                     return;
@@ -526,6 +546,10 @@ namespace SDroid
                 if (string.IsNullOrEmpty(emailAuthCode))
                 {
                     BotLogger.LogError("[{0}] Bad email verification code provided.", SteamId?.ConvertToUInt64());
+                    lock (LocalLock)
+                    {
+                        StalledLoginCheckTimer?.Dispose();
+                    }
                     OnTerminate().Wait();
 
                     return;
@@ -542,6 +566,10 @@ namespace SDroid
                 if (string.IsNullOrWhiteSpace(password))
                 {
                     BotLogger.LogError("[{0}] Bad password provided.", SteamId?.ConvertToUInt64());
+                    lock (LocalLock)
+                    {
+                        StalledLoginCheckTimer?.Dispose();
+                    }
                     OnTerminate().Wait();
 
                     return;
@@ -552,6 +580,10 @@ namespace SDroid
             }
             else if (loggedOnCallback.Result == EResult.ServiceUnavailable || loggedOnCallback.Result == EResult.TryAnotherCM)
             {
+                lock (LocalLock)
+                {
+                    StalledLoginCheckTimer?.Dispose();
+                }
                 OnTerminate().Wait();
                 return;
             }
@@ -818,6 +850,10 @@ namespace SDroid
                 BotLogger.LogError(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
             }
 
+            lock (LocalLock)
+            {
+                StalledLoginCheckTimer?.Dispose();
+            }
             await OnTerminate().ConfigureAwait(false);
         }
     }
