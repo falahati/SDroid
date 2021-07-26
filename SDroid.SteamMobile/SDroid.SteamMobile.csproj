@@ -14,6 +14,7 @@
     <PackageIconUrl>https://github.com/falahati/SDroid/raw/master/SDroid.SteamMobile/Icon.png</PackageIconUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <IncludeSource>true</IncludeSource>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Title>SDroid's Steam Mobile</Title>
     <PackageId>SDroid.SteamMobile</PackageId>

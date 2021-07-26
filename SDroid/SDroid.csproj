@@ -16,6 +16,7 @@
     <PackageIconUrl>https://github.com/falahati/SDroid/raw/master/SDroid/Icon.png</PackageIconUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <IncludeSource>true</IncludeSource>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Title>SDroid</Title>
     <PackageId>SDroid</PackageId>
