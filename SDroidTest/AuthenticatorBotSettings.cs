@@ -4,7 +4,7 @@ using SDroid.SteamWeb;
 
 namespace SDroidTest
 {
-    internal class AuthenticatorBotSettings : IBotSettings, IAuthenticatorSettings
+    internal class AuthenticatorBotSettings : ISampleBotSettings, IAuthenticatorSettings
     {
         /// <inheritdoc />
         public Authenticator Authenticator { get; set; }
@@ -30,7 +30,7 @@ namespace SDroidTest
         /// <inheritdoc />
         public int SessionCheckInterval { get; set; } = 60;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ISampleBotSettings" />
         public string Username { get; set; }
 
         /// <inheritdoc />

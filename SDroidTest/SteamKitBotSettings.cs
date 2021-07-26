@@ -3,7 +3,7 @@ using SDroid.SteamWeb;
 
 namespace SDroidTest
 {
-    internal class SteamKitBotSettings : ISteamKitBotSettings
+    internal class SteamKitBotSettings : ISteamKitBotSettings, ISampleBotSettings
     {
         /// <inheritdoc />
         public string ApiKey { get; set; }
@@ -23,7 +23,7 @@ namespace SDroidTest
         /// <inheritdoc />
         public int SessionCheckInterval { get; set; } = 60;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ISampleBotSettings" />
         public string Username { get; set; }
 
         /// <inheritdoc />

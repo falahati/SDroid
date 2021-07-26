@@ -1,13 +1,12 @@
 ﻿using System.IO;
 using ConsoleUtilities;
 using Newtonsoft.Json;
-using SDroid.Interfaces;
 
 namespace SDroidTest
 {
     internal static class SettingsExtension
     {
-        public static bool Clear<T>() where T : IBotSettings
+        public static bool Clear<T>() where T : ISampleBotSettings
         {
             if (!File.Exists(typeof(T).Name + ".json"))
             {
@@ -28,12 +27,12 @@ namespace SDroidTest
             return false;
         }
 
-        public static bool Exist<T>() where T : IBotSettings
+        public static bool Exist<T>() where T : ISampleBotSettings
         {
             return File.Exists(typeof(T).Name + ".json");
         }
 
-        public static T Load<T>() where T : IBotSettings, new()
+        public static T Load<T>() where T : ISampleBotSettings, new()
         {
             if (File.Exists(typeof(T).Name + ".json"))
             {
@@ -60,7 +59,7 @@ namespace SDroidTest
             };
         }
 
-        public static void Save<T>(this T settings) where T : IBotSettings
+        public static void Save<T>(this T settings) where T : ISampleBotSettings
         {
             try
             {

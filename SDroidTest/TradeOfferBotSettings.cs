@@ -5,7 +5,7 @@ using SDroid.SteamWeb;
 namespace SDroidTest
 {
     // ReSharper disable once InconsistentNaming
-    public class TradeOfferBotSettings : IBotSettings, ITradeOfferBotSettings
+    public class TradeOfferBotSettings : ISampleBotSettings, ITradeOfferBotSettings
     {
         /// <inheritdoc />
         public string ApiKey { get; set; }
@@ -25,7 +25,7 @@ namespace SDroidTest
         /// <inheritdoc />
         public int SessionCheckInterval { get; set; } = 60;
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ISampleBotSettings" />
         public string Username { get; set; }
 
         /// <inheritdoc />
