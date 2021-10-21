@@ -134,6 +134,7 @@ namespace SDroid.SteamTrade
                     new
                     {
                         tradeid = tradeId,
+                        language = "en_us",
                         get_descriptions = 1,
                     }
                 ),

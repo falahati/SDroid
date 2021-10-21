@@ -732,9 +732,14 @@ namespace SDroid.SteamTrade
                 throw new InvalidOperationException("Can't get a receipt for a trade offer that is not yet accepted.");
             }
 
+            return GetExchangeReceipt(offer.TradeId.Value);
+        }
+
+        public Task<TradeExchangeReceipt> GetExchangeReceipt(long tradeId)
+        {
             try
             {
-                return TradeManager.GetExchangeReceipt(TradeOfferOptions, SteamWebAPI, offer.TradeId.Value);
+                return TradeManager.GetExchangeReceipt(TradeOfferOptions, SteamWebAPI, tradeId);
             }
             catch (TradeException e)
             {
