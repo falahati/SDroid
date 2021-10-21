@@ -35,9 +35,9 @@ namespace SDroid.SteamMobile
         protected const long SteamGuardCodeGenerationStep = 30L;
         protected const int SteamGuardCodeLength = 5;
 
-        protected static readonly Regex ConfirmationRegex =
-            new Regex(
-                "<div class=\"mobileconf_list_entry\" id=\"conf[0-9]+\" data-confid=\"(\\d+)\" data-key=\"(\\d+)\" data-type=\"(\\d+)\" data-creator=\"(\\d+)\"");
+        protected static readonly Regex ConfirmationRegex = new Regex(
+            "<div class=\"mobileconf_list_entry\" id=\"conf[0-9]+\" data-confid=\"(\\d+)\" data-key=\"(\\d+)\" data-type=\"(\\d+)\" data-creator=\"(\\d+)\""
+        );
 
         protected static readonly char[] SteamGuardCodeTranslations =
         {
@@ -153,13 +153,18 @@ namespace SDroid.SteamMobile
 
                 if (steamId != null && !string.IsNullOrWhiteSpace(webCookie))
                 {
-                    var newSession = new MobileSession(authenticator.Session.OAuthToken, steamId,
-                        authenticator.Session.SteamLogin, authenticator.Session.SteamLoginSecure,
-                        authenticator.Session.SessionId, authenticator.Session.RememberLoginToken,
+                    var newSession = new MobileSession(
+                        authenticator.Session.OAuthToken,
+                        steamId,
+                        authenticator.Session.SteamLogin,
+                        authenticator.Session.SteamLoginSecure,
+                        authenticator.Session.SessionId,
+                        authenticator.Session.RememberLoginToken,
                         new Dictionary<ulong, string>
                         {
-                            {steamId.Value, webCookie}
-                        });
+                            { steamId.Value, webCookie }
+                        }
+                    );
 
                     authenticator = new Authenticator(
                         authenticator.AuthenticatorData,
@@ -189,12 +194,7 @@ namespace SDroid.SteamMobile
             }
 
             // Do we have a enough information to call this a valid instance?
-            if (!authenticator.HasEnoughInfo())
-            {
-                return null;
-            }
-
-            return authenticator;
+            return authenticator.HasEnoughInfo() ? authenticator : null;
         }
 
         /// <summary>
@@ -342,50 +342,62 @@ namespace SDroid.SteamMobile
         /// <exception cref="WebException">Failed to communicate with steam's network or a bad response received.</exception>
         public async Task<Confirmation[]> FetchConfirmations()
         {
-            var parameters = await GetConfirmationParameters("conf").ConfigureAwait(false);
-            var response = await OperationRetryHelper.Default.RetryOperationAsync(
-                () => SteamWeb.FetchString(
-                    new SteamWebAccessRequest(
-                        MobileConfirmationsUrl,
-                        SteamWebAccessRequestMethod.Get,
-                        parameters
+            try
+            {
+                var parameters = await GetConfirmationParameters("conf").ConfigureAwait(false);
+                var response = await OperationRetryHelper.Default.RetryOperationAsync(
+                    () => SteamWeb.FetchString(
+                        new SteamWebAccessRequest(
+                            MobileConfirmationsUrl,
+                            SteamWebAccessRequestMethod.Get,
+                            parameters
+                        )
                     )
-                )
-            ).ConfigureAwait(false);
+                ).ConfigureAwait(false);
 
-            /*
+                /*
               So you're going to see this abomination and you're going to be upset.
               It's understandable. But the thing is, regex for HTML -- while awful -- makes this way faster than parsing a DOM, plus we don't need another library.
               And because the data is always in the same place and same format... It's not as if we're trying to naturally understand HTML here. Just extract strings.
               I'm sorry. 
             */
 
-            if (response == null || !ConfirmationRegex.IsMatch(response))
-            {
-                if (string.IsNullOrWhiteSpace(response) || !response.Contains("id=\"mobileconf_empty\""))
+                if (response == null || !ConfirmationRegex.IsMatch(response))
                 {
-                    throw new TokenInvalidException();
+                    if (string.IsNullOrWhiteSpace(response) || !response.Contains("id=\"mobileconf_empty\""))
+                    {
+                        throw new TokenInvalidException();
+                    }
+
+                    return Array.Empty<Confirmation>();
                 }
 
-                return new Confirmation[0];
-            }
-
-            return ConfirmationRegex.Matches(response).Cast<Match>()
-                .Where(match => match.Groups.Count == 5)
-                .Select(
-                    match =>
-                    {
-                        if (ulong.TryParse(match.Groups[1].Value, out var id) &&
-                            ulong.TryParse(match.Groups[2].Value, out var key) &&
-                            int.TryParse(match.Groups[3].Value, out var type) &&
-                            ulong.TryParse(match.Groups[4].Value, out var creator))
+                return ConfirmationRegex.Matches(response).Cast<Match>()
+                    .Where(match => match.Groups.Count == 5)
+                    .Select(
+                        match =>
                         {
-                            return new Confirmation(id, key, (ConfirmationType) type, creator);
-                        }
+                            if (ulong.TryParse(match.Groups[1].Value, out var id) &&
+                                ulong.TryParse(match.Groups[2].Value, out var key) &&
+                                int.TryParse(match.Groups[3].Value, out var type) &&
+                                ulong.TryParse(match.Groups[4].Value, out var creator))
+                            {
+                                return new Confirmation(id, key, (ConfirmationType) type, creator);
+                            }
 
-                        return null;
-                    }
-                ).Where(confirmation => confirmation != null).ToArray();
+                            return null;
+                        }
+                    ).Where(confirmation => confirmation != null).ToArray();
+            }
+            catch (Exception e)
+            {
+                if (MobileSession.IsTokenExpired(e))
+                {
+                    throw new TokenExpiredException(e);
+                }
+
+                throw;
+            }
         }
 
         /// <summary>
@@ -551,8 +563,8 @@ namespace SDroid.SteamMobile
         {
             var operation = allow ? "allow" : "cancel";
             var parameters = await GetConfirmationParameters(operation).ConfigureAwait(false);
-            var referer = (await GetConfirmationParameters("conf").ConfigureAwait(false)).AppendToUrl(
-                MobileConfirmationsUrl);
+            var referer = (await GetConfirmationParameters("conf").ConfigureAwait(false))
+                .AppendToUrl(MobileConfirmationsUrl);
 
             return (await OperationRetryHelper.Default.RetryOperationAsync(
                        () => SteamWeb.FetchObject<SendConfirmationResponse>(
@@ -584,33 +596,34 @@ namespace SDroid.SteamMobile
         {
             var operation = allow ? "allow" : "cancel";
             var parameters = await GetConfirmationParameters(operation).ConfigureAwait(false);
-            var referer = (await GetConfirmationParameters("conf").ConfigureAwait(false)).AppendToUrl(
-                MobileConfirmationsUrl);
+            var referer = (await GetConfirmationParameters("conf").ConfigureAwait(false))
+                .AppendToUrl(MobileConfirmationsUrl);
 
-            return (await OperationRetryHelper.Default.RetryOperationAsync(
-                       () => SteamWeb.FetchObject<SendConfirmationResponse>(
-                           new SteamWebAccessRequest(
-                               MobileConfirmationsOperationsUrl,
-                               SteamWebAccessRequestMethod.Post,
-                               new QueryStringBuilder
-                               {
-                                   {"op", operation}
-                               }.Concat(
-                                   parameters
-                               ).Concat(
-                                   confirmations.SelectMany(confirmation => new QueryStringBuilder
-                                   {
-                                       {"cid[]", confirmation.Id},
-                                       {"ck[]", confirmation.Key}
-                                   })
-                               )
-                           )
-                           {
-                               Referer = referer
-                           }
-                       )
-                   ).ConfigureAwait(false))?.Success ==
-                   true;
+            return (
+                await OperationRetryHelper.Default.RetryOperationAsync(
+                    () => SteamWeb.FetchObject<SendConfirmationResponse>(
+                        new SteamWebAccessRequest(
+                            MobileConfirmationsOperationsUrl,
+                            SteamWebAccessRequestMethod.Post,
+                            new QueryStringBuilder
+                            {
+                                { "op", operation }
+                            }.Concat(
+                                parameters
+                            ).Concat(
+                                confirmations.SelectMany(confirmation => new QueryStringBuilder
+                                {
+                                    { "cid[]", confirmation.Id },
+                                    { "ck[]", confirmation.Key }
+                                })
+                            )
+                        )
+                        {
+                            Referer = referer
+                        }
+                    )
+                ).ConfigureAwait(false)
+            )?.Success == true;
         }
     }
 }

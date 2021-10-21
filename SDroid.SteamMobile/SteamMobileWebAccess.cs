@@ -1,6 +1,5 @@
 ﻿using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 using SDroid.SteamWeb;
 
@@ -9,7 +8,7 @@ namespace SDroid.SteamMobile
     public class SteamMobileWebAccess : SteamWebAccess
     {
         protected const string ClientUserAgent =
-            "Mozilla/5.0 (Linux; U; Android 4.1.1; en-us; Google Nexus 4 - 4.1.1 - API 16 - 768x1280 Build/JRO03S) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30";
+            "Mozilla/5.0 (Linux; Android 6.0; Nexus 6P Build/XXXXX; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/47.0.2526.68 Mobile Safari/537.36";
 
         protected const string ClientXRequestedWith = "com.valvesoftware.android.steam.community";
 

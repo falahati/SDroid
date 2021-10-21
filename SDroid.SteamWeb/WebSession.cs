@@ -33,7 +33,8 @@ namespace SDroid.SteamWeb
             string steamLoginSecure,
             string sessionId,
             string rememberLoginToken,
-            Dictionary<ulong, string> steamMachineAuthenticationTokens) : this()
+            Dictionary<ulong, string> steamMachineAuthenticationTokens
+            ) : this()
         {
             SteamLogin = steamLogin;
             SteamLoginSecure = steamLoginSecure;
@@ -53,7 +54,8 @@ namespace SDroid.SteamWeb
                 new Dictionary<ulong, string>
                 {
                     {transferParameters.SteamId, transferParameters.WebCookie}
-                })
+                }
+            )
         {
         }
 

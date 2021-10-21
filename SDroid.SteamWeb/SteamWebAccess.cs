@@ -272,10 +272,12 @@ namespace SDroid.SteamWeb
             webRequest.KeepAlive = false;
             webRequest.CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.Revalidate);
             webRequest.Headers[HttpRequestHeader.AcceptLanguage] = "en, en-us;q=0.9, en-gb;q=0.8";
-            if (IPAddress != null &&
+            if (
+                IPAddress != null &&
                 !IPAddress.Equals(IPAddress.Any) &&
                 IPAddress.Equals(IPAddress.IPv6Any) &&
-                !IPAddress.IsLoopback(IPAddress))
+                !IPAddress.IsLoopback(IPAddress)
+            )
             {
                 webRequest.ServicePoint.BindIPEndPointDelegate =
                     (point, endPoint, count) => new IPEndPoint(IPAddress, 0);
@@ -328,18 +330,19 @@ namespace SDroid.SteamWeb
                 {
                     var found = false;
 
-                    foreach (var c in webRequest?.CookieContainer?.GetCookies(webResponse.ResponseUri).Cast<Cookie>() ??
-                                      new Cookie[0])
+                    foreach (var c in webRequest?.CookieContainer?.GetCookies(webResponse.ResponseUri).Cast<Cookie>() ?? Array.Empty<Cookie>())
                     {
-                        if (c.Name == cookie.Name)
+                        if (c.Name != cookie.Name)
                         {
-                            c.Value = cookie.Value;
-                            c.Expires = cookie.Expires;
-                            c.Expired = cookie.Expired;
-                            found = true;
-
-                            break;
+                            continue;
                         }
+
+                        c.Value = cookie.Value;
+                        c.Expires = cookie.Expires;
+                        c.Expired = cookie.Expired;
+                        found = true;
+
+                        break;
                     }
 
                     if (!found)
@@ -349,7 +352,6 @@ namespace SDroid.SteamWeb
                 }
 
                 var responseStream = webResponse.GetResponseStream();
-
                 if (responseStream == null)
                 {
                     if (!accessRequest.AcceptFailureResponses)

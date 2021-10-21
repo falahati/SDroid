@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -44,10 +46,12 @@ namespace SDroid.SteamMobile
             base(steamId, steamLogin, steamLoginSecure, sessionId,
                 rememberLoginToken, steamMachineAuthenticationTokens)
         {
-            WebCookies.Add(new Cookie("mobileClientVersion", ClientVersion, "/",
-                CommunityCookieDomain));
-            WebCookies.Add(new Cookie("mobileClient", ClientName, "/",
-                CommunityCookieDomain));
+            WebCookies.Add(
+                new Cookie("mobileClientVersion", ClientVersion, "/", CommunityCookieDomain)
+            );
+            WebCookies.Add(
+                new Cookie("mobileClient", ClientName, "/", CommunityCookieDomain)
+            );
 
             OAuthToken = oAuthToken;
             SteamId = steamId;
@@ -55,10 +59,12 @@ namespace SDroid.SteamMobile
 
         public MobileSession()
         {
-            WebCookies.Add(new Cookie("mobileClientVersion", ClientVersion, "/",
-                CommunityCookieDomain));
-            WebCookies.Add(new Cookie("mobileClient", ClientName, "/",
-                CommunityCookieDomain));
+            WebCookies.Add(
+                new Cookie("mobileClientVersion", ClientVersion, "/", CommunityCookieDomain)
+            );
+            WebCookies.Add(
+                new Cookie("mobileClient", ClientName, "/", CommunityCookieDomain)
+            );
         }
 
         internal MobileSession(MobileLoginOAuthModel oAuth, string sessionId) :
@@ -72,7 +78,8 @@ namespace SDroid.SteamMobile
                 new Dictionary<ulong, string>
                 {
                     {oAuth.SteamId, oAuth.WebCookie}
-                })
+                }
+            )
         {
         }
 
@@ -220,28 +227,54 @@ namespace SDroid.SteamMobile
 
                 return true;
             }
-            catch (WebException e)
+            catch (Exception e)
             {
-                var response = e.Response as HttpWebResponse;
-
-                //Redirecting -- likely to a steammobile:// URI
-                if (response?.StatusCode == HttpStatusCode.Found)
+                if (IsTokenExpired(e))
                 {
-                    var location = response.Headers.Get("Location");
-
-                    if (!string.IsNullOrEmpty(location))
-                    {
-                        // Our OAuth token has expired. This is given both when we must refresh our session, or the entire OAuth Token cannot be refreshed anymore.
-                        // Thus, we should only throw this exception when we're attempting to refresh our session.
-                        if (location == "steammobile://lostauth")
-                        {
-                            throw new TokenExpiredException(e);
-                        }
-                    }
+                    throw new TokenInvalidException(e);
                 }
             }
 
             return false;
+        }
+
+        public static bool IsTokenExpired(Exception exception)
+        {
+            HttpWebResponse response = null;
+            switch (exception)
+            {
+                case WebException webException:
+                    response = webException.Response as HttpWebResponse;
+                    break;
+                case AggregateException aggregateException:
+                {
+                    foreach (var e in aggregateException.InnerExceptions.OfType<WebException>())
+                    {
+                        response = e.Response as HttpWebResponse;
+                        break;
+                    }
+
+                    break;
+                }
+                default:
+                    return false;
+            }
+            
+            // Redirecting -- likely to a steammobile:// URI
+            if (response?.StatusCode != HttpStatusCode.Found)
+            {
+                return false;
+            }
+
+            var location = response.Headers.Get("Location");
+            if (string.IsNullOrEmpty(location))
+            {
+                return false;
+            }
+
+            // Our OAuth token has expired. This is given both when we must refresh our session, or the entire OAuth Token cannot be refreshed anymore.
+            // Thus, we should only throw this exception when we're attempting to refresh our session.
+            return location.StartsWith("steammobile://lostauth", StringComparison.CurrentCultureIgnoreCase);
         }
 
         public void UpdateSession(WebSession webSession)

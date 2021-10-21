@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using SDroid.Helpers;
 using SDroid.Interfaces;
 using SDroid.SteamMobile;
+using SDroid.SteamMobile.Exceptions;
 using SDroid.SteamTrade;
 using SDroid.SteamTrade.EventArguments;
 using SDroid.SteamTrade.Models.Trade;
@@ -493,12 +494,38 @@ namespace SDroid
                         }
                     }
 
+                    if (authenticatorBot.WebAccess is SteamMobileWebAccess mobileWebAccess)
+                    {
+                        try
+                        {
+                            BotLogger.LogTrace("[{0}] Refreshing authenticator session before accessing confirmations...", SteamId?.ConvertToUInt64());
+
+                            if (!await authenticatorBot.BotAuthenticatorSettings.Authenticator.Session.RefreshSession(mobileWebAccess))
+                            {
+                                BotLogger.LogWarning("[{0}] Failed to refresh authenticator session.", SteamId?.ConvertToUInt64());
+                                return;
+                            }
+                        }
+                        catch (TokenInvalidException)
+                        {
+                            BotLogger.LogDebug("[{0}] Session is invalid. Forcefully starting a new login process.", SteamId?.ConvertToUInt64());
+                            await BotLogin().ConfigureAwait(false);
+                            return;
+                        }
+                        catch (Exception e2)
+                        {
+                            BotLogger.LogWarning(e2, "[{0}] {1}", SteamId?.ConvertToUInt64(), e2.Message);
+                            BotLogger.LogWarning("[{0}] Failed to refresh authenticator session.", SteamId?.ConvertToUInt64());
+                            return;
+                        }
+                    }
+
                     BotLogger.LogDebug("[{0}] Retrieving the list of authenticator pending confirmations.", SteamId?.ConvertToUInt64());
                     var confirmations = await (
                         authenticatorBot.BotAuthenticatorSettings?.Authenticator?.FetchConfirmations()
                     ).ConfigureAwait(false);
 
-                    foreach (var confirmation in confirmations ?? new Confirmation[0])
+                    foreach (var confirmation in confirmations ?? Array.Empty<Confirmation>())
                     {
                         var isNew = false;
 
@@ -513,7 +540,8 @@ namespace SDroid
 
                         if (isNew)
                         {
-                            await authenticatorBot.OnAuthenticatorConfirmationAvailable(confirmation).ConfigureAwait(false);
+                            await authenticatorBot.OnAuthenticatorConfirmationAvailable(confirmation)
+                                .ConfigureAwait(false);
                         }
                     }
 
@@ -528,34 +556,40 @@ namespace SDroid
                         }
                     }
                 }
+                catch (TokenExpiredException e)
+                {
+                    BotLogger.LogWarning(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
+                    BotLogger.LogDebug("[{0}] Realigning time ...", SteamId?.ConvertToUInt64());
+                    await SteamTime.ReAlignTime();
+
+                    if (
+                        authenticatorBot.WebAccess.Session is MobileSession mobileSession &&
+                        authenticatorBot.WebAccess is SteamMobileWebAccess mobileWebAccess
+                    )
+                    {
+                        try
+                        {
+                            BotLogger.LogDebug("[{0}] Refreshing authenticator session after failed confirmation retrieval...", SteamId?.ConvertToUInt64());
+
+                            if (await mobileSession.RefreshSession(mobileWebAccess))
+                            {
+                                await OnNewWebSessionAvailable(mobileSession);
+                            }
+                        }
+                        catch (TokenInvalidException)
+                        {
+                            BotLogger.LogDebug("[{0}] Session is invalid. Forcefully starting a new login process.", SteamId?.ConvertToUInt64());
+                            await BotLogin().ConfigureAwait(false);
+                        }
+                        catch (Exception e2)
+                        {
+                            BotLogger.LogWarning(e2, "[{0}] {1}", SteamId?.ConvertToUInt64(), e2.Message);
+                        }
+                    }
+                }
                 catch (Exception e)
                 {
                     BotLogger.LogWarning(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
-                    if (e is AggregateException aggregatedException && aggregatedException.InnerExceptions.Any(i => i.Message.Contains("(302)")))
-                    {
-                        if (
-                            authenticatorBot.WebAccess.Session is MobileSession mobileSession &&
-                            authenticatorBot.WebAccess is SteamMobileWebAccess mobileWebAccess)
-                        {
-                            try
-                            {
-                                BotLogger.LogDebug("[{0}] Refreshing authenticator session...", SteamId?.ConvertToUInt64());
-
-                                if (await mobileSession.RefreshSession(mobileWebAccess))
-                                {
-                                    await OnNewWebSessionAvailable(mobileSession);
-                                    return;
-                                }
-                            }
-                            catch (Exception e2)
-                            {
-                                BotLogger.LogWarning(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e2.Message);
-                            }
-                        }
-
-                        BotLogger.LogDebug("[{0}] Session expired. Forcefully starting a new login process.", SteamId?.ConvertToUInt64());
-                        await BotLogin().ConfigureAwait(false);
-                    }
                 }
             }
         }
