@@ -11,7 +11,7 @@ namespace SDroid.SteamTrade.Exceptions
 
 
         public UserInventoryFetchOverviewException(SteamID steamId, Exception innerException = null)
-            : base($"Failed to fetch user {steamId} inventory overview.", innerException)
+            : base($"Failed to fetch user {steamId.ConvertToUInt64()} inventory overview.", innerException)
         {
             SteamId = steamId;
         }
