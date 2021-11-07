@@ -476,7 +476,7 @@ namespace SDroid
             WebAPI = null;
         }
 
-        protected virtual async Task OnAuthenticatorCheckConfirmations()
+        protected virtual async Task OnAuthenticatorCheckConfirmations(bool isCallback)
         {
             // ReSharper disable once SuspiciousTypeConversion.Global
             if (this is IAuthenticatorBot authenticatorBot)
@@ -490,32 +490,6 @@ namespace SDroid
                             authenticatorBot.BotAuthenticatorSettings.Authenticator == null
                         )
                         {
-                            return;
-                        }
-                    }
-
-                    if (authenticatorBot.WebAccess is SteamMobileWebAccess mobileWebAccess)
-                    {
-                        try
-                        {
-                            BotLogger.LogTrace("[{0}] Refreshing authenticator session before accessing confirmations...", SteamId?.ConvertToUInt64());
-
-                            if (!await authenticatorBot.BotAuthenticatorSettings.Authenticator.Session.RefreshSession(mobileWebAccess))
-                            {
-                                BotLogger.LogWarning("[{0}] Failed to refresh authenticator session.", SteamId?.ConvertToUInt64());
-                                return;
-                            }
-                        }
-                        catch (TokenInvalidException)
-                        {
-                            BotLogger.LogDebug("[{0}] Session is invalid. Forcefully starting a new login process.", SteamId?.ConvertToUInt64());
-                            await BotLogin().ConfigureAwait(false);
-                            return;
-                        }
-                        catch (Exception e2)
-                        {
-                            BotLogger.LogWarning(e2, "[{0}] {1}", SteamId?.ConvertToUInt64(), e2.Message);
-                            BotLogger.LogWarning("[{0}] Failed to refresh authenticator session.", SteamId?.ConvertToUInt64());
                             return;
                         }
                     }
@@ -561,7 +535,7 @@ namespace SDroid
                     BotLogger.LogWarning(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
                     BotLogger.LogDebug("[{0}] Realigning time ...", SteamId?.ConvertToUInt64());
                     await SteamTime.ReAlignTime();
-
+                    
                     if (
                         authenticatorBot.WebAccess.Session is MobileSession mobileSession &&
                         authenticatorBot.WebAccess is SteamMobileWebAccess mobileWebAccess
@@ -574,6 +548,10 @@ namespace SDroid
                             if (await mobileSession.RefreshSession(mobileWebAccess))
                             {
                                 await OnNewWebSessionAvailable(mobileSession);
+                                if (isCallback)
+                                {
+                                    await OnAuthenticatorCheckConfirmations(false);
+                                }
                             }
                         }
                         catch (TokenInvalidException)
@@ -584,6 +562,7 @@ namespace SDroid
                         catch (Exception e2)
                         {
                             BotLogger.LogWarning(e2, "[{0}] {1}", SteamId?.ConvertToUInt64(), e2.Message);
+                            BotLogger.LogWarning("[{0}] Failed to refresh authenticator session.", SteamId?.ConvertToUInt64());
                         }
                     }
                 }
@@ -946,7 +925,7 @@ namespace SDroid
                     AuthenticatorConfirmationTimer = new Timer(
                         async state =>
                         {
-                            await OnAuthenticatorCheckConfirmations().ConfigureAwait(false);
+                            await OnAuthenticatorCheckConfirmations(true).ConfigureAwait(false);
 
                             if (CancellationTokenSource?.IsCancellationRequested == false)
                             {
