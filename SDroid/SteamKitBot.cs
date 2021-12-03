@@ -55,8 +55,8 @@ namespace SDroid
             SubscribedCallbacks.Add(
                 CallbackManager.Subscribe<SteamClient.DisconnectedCallback>(OnInternalSteamClientDisconnect)
             );
-
-            SubscribedCallbacks.Add(CallbackManager.Subscribe<SteamUser.LoggedOnCallback>(OnInternalSteamUserLoggedOn)
+            SubscribedCallbacks.Add(
+                CallbackManager.Subscribe<SteamUser.LoggedOnCallback>(OnInternalSteamUserLoggedOn)
             );
             SubscribedCallbacks.Add(
                 CallbackManager.Subscribe<SteamUser.LoggedOffCallback>(OnInternalSteamUserLoggedOff)
@@ -67,8 +67,8 @@ namespace SDroid
             SubscribedCallbacks.Add(
                 CallbackManager.Subscribe<SteamUser.WebAPIUserNonceCallback>(OnInternalSteamUserNewWebApiUserNonce)
             );
-            SubscribedCallbacks.Add(CallbackManager.Subscribe<SteamUser.UpdateMachineAuthCallback>(
-                OnInternalSteamUserUpdateMachineAuthenticationCallback)
+            SubscribedCallbacks.Add(
+                CallbackManager.Subscribe<SteamUser.UpdateMachineAuthCallback>(OnInternalSteamUserUpdateMachineAuthenticationCallback)
             );
             SubscribedCallbacks.Add(
                 CallbackManager.Subscribe<SteamUser.AccountInfoCallback>(OnInternalAccountInfoAvailable)
@@ -332,14 +332,18 @@ namespace SDroid
 
         private void OnInternalAccountInfoAvailable(SteamUser.AccountInfoCallback accountInfoCallback)
         {
-            BotLogger.LogTrace("[{0}] Account info available.", SteamId?.ConvertToUInt64());
+            BotLogger.LogTrace("[{0}] Account info available. Flags = `{1:F}`", SteamId?.ConvertToUInt64(), accountInfoCallback.AccountFlags);
             OnAccountInfoAvailable(accountInfoCallback);
         }
 
 
         private void OnInternalSteamClientConnected(SteamClient.ConnectedCallback connectedCallback)
         {
-            BotLogger.LogInformation("[{0}] Connected to the steam network.", SteamId?.ConvertToUInt64());
+            BotLogger.LogInformation(
+                "[{0}] Connected to the steam network. Endpoint = `{1}`", 
+                SteamId?.ConvertToUInt64(), 
+                SteamClient.CurrentEndPoint
+            );
             ConnectionBackoff.Reset();
 
             lock (LocalLock)
@@ -352,8 +356,10 @@ namespace SDroid
 
         private void OnInternalSteamClientDisconnect(SteamClient.DisconnectedCallback disconnectedCallback)
         {
-            BotLogger.LogTrace("[{0}] Disconnected from the steam network. SteamClient.DisconnectedCallback.UserInitiated = `{1}`",
+            BotLogger.LogTrace(
+                "[{0}] Disconnected from the steam network. Endpoint = `{1}`, UserInitiated = `{2}`",
                 SteamId?.ConvertToUInt64(),
+                SteamClient.CurrentEndPoint,
                 disconnectedCallback.UserInitiated
             );
 
@@ -727,7 +733,12 @@ namespace SDroid
 
         private void OnInternalWalletInfoAvailable(SteamUser.WalletInfoCallback walletInfoCallback)
         {
-            BotLogger.LogTrace("[{0}] Account wallet information available.", SteamId?.ConvertToUInt64());
+            BotLogger.LogTrace(
+                "[{0}] Account wallet information available. Balance = `{1:F2} {2:G}`", 
+                SteamId?.ConvertToUInt64(), 
+                walletInfoCallback.Balance / 100,
+                walletInfoCallback.Currency
+            );
             OnWalletInfoAvailable(walletInfoCallback);
         }
 
