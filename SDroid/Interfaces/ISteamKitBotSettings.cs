@@ -7,5 +7,6 @@
         byte[] SentryFile { get; set; }
         byte[] SentryFileHash { get; set; }
         string SentryFileName { get; set; }
+        int? ConnectionTimeout { get; set; }
     }
 }

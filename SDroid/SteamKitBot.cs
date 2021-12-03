@@ -27,8 +27,24 @@ namespace SDroid
         protected SteamKitBot(ISteamKitBotSettings settings, ILogger botLogger) : base(settings, botLogger)
         {
             CancellationTokenSource = new CancellationTokenSource();
+            SteamClient = new SteamClient(
+                SteamConfiguration.Create(
+                    builder =>
+                    {
+                        if (settings.ConnectionTimeout != null)
+                        {
+                            builder.WithConnectionTimeout(
+                                TimeSpan.FromSeconds(settings.ConnectionTimeout.Value)
+                            );
+                        }
 
-            SteamClient = new SteamClient();
+                        if (!string.IsNullOrWhiteSpace(settings.ApiKey))
+                        {
+                            builder.WithWebAPIKey(settings.ApiKey);
+                        }
+                    }
+                )
+            );
             CallbackManager = new CallbackManager(SteamClient);
             SteamUser = SteamClient.GetHandler<SteamUser>();
             SteamFriends = SteamClient.GetHandler<SteamFriends>();
