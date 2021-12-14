@@ -46,5 +46,7 @@ namespace SDroidTest
 
         /// <inheritdoc />
         public string SentryFileName { get; set; }
+
+        public int? ConnectionTimeout { get; set; }
     }
 }

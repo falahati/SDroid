@@ -332,7 +332,7 @@ namespace SDroid
                 if (string.IsNullOrWhiteSpace(password))
                 {
                     BotLogger.LogError("[{0}] Bad password provided.", SteamId?.ConvertToUInt64());
-                    await OnTerminate().ConfigureAwait(false);
+                    await OnTerminate(false).ConfigureAwait(false);
 
                     return;
                 }
@@ -361,12 +361,6 @@ namespace SDroid
 
                         switch (e.ErrorCode)
                         {
-                            case UserLoginErrorCode.GeneralFailure:
-
-                                throw;
-                            case UserLoginErrorCode.BadRSAResponse:
-
-                                throw;
                             case UserLoginErrorCode.BadCredentials:
                                 BotLogger.LogDebug("[{0}] Requesting account password.", SteamId?.ConvertToUInt64());
                                 password = await OnPasswordRequired().ConfigureAwait(false);
@@ -374,13 +368,18 @@ namespace SDroid
                                 if (string.IsNullOrWhiteSpace(password))
                                 {
                                     BotLogger.LogError("[{0}] Bad password provided.", SteamId?.ConvertToUInt64());
-                                    await OnTerminate().ConfigureAwait(false);
+                                    await OnTerminate(false).ConfigureAwait(false);
 
                                     return;
                                 }
                                 else
                                 {
-                                    // backoff.Reset(); allow backoff
+                                    if (backoff.Attempts >= 3)
+                                    {
+                                        OnTerminate(false).Wait();
+                                        return;
+                                    }
+
                                     loginCredentials.Password = password;
                                     loginCredentials.EmailVerificationCode = null;
                                     loginCredentials.CaptchaCode = null;
@@ -392,19 +391,25 @@ namespace SDroid
 
                                 BotLogger.LogDebug("[{0}] Downloading captcha image.", SteamId?.ConvertToUInt64());
                                 var captchaImage = await e.UserLogin.DownloadCaptchaImage().ConfigureAwait(false);
+
                                 BotLogger.LogDebug("[{0}] Requesting captcha code.", SteamId?.ConvertToUInt64());
                                 var captchaCode = await OnCaptchaCodeRequired(captchaImage).ConfigureAwait(false);
 
                                 if (string.IsNullOrWhiteSpace(captchaCode))
                                 {
                                     BotLogger.LogError("[{0}] Bad captcha code provided.", SteamId?.ConvertToUInt64());
-                                    await OnTerminate().ConfigureAwait(false);
+                                    await OnTerminate(false).ConfigureAwait(false);
 
                                     return;
                                 }
                                 else
                                 {
-                                    // backoff.Reset(); allow backoff
+                                    if (backoff.Attempts >= 3)
+                                    {
+                                        OnTerminate(false).Wait();
+                                        return;
+                                    }
+
                                     loginCredentials.CaptchaCode = captchaCode;
                                 }
 
@@ -416,13 +421,18 @@ namespace SDroid
                                 if (string.IsNullOrWhiteSpace(mobileAuthCode))
                                 {
                                     BotLogger.LogError("[{0}] Bad authenticator code provided.", SteamId?.ConvertToUInt64());
-                                    await OnTerminate().ConfigureAwait(false);
+                                    await OnTerminate(false).ConfigureAwait(false);
 
                                     return;
                                 }
                                 else
                                 {
-                                    backoff.Reset();
+                                    if (backoff.Attempts >= 3)
+                                    {
+                                        OnTerminate(false).Wait();
+                                        return;
+                                    }
+
                                     loginCredentials.TwoFactorAuthenticationCode = mobileAuthCode;
                                 }
 
@@ -434,13 +444,18 @@ namespace SDroid
                                 if (string.IsNullOrWhiteSpace(emailAuthCode))
                                 {
                                     BotLogger.LogError("[{0}] Bad email verification code provided.", SteamId?.ConvertToUInt64());
-                                    await OnTerminate().ConfigureAwait(false);
+                                    await OnTerminate(false).ConfigureAwait(false);
 
                                     return;
                                 }
                                 else
                                 {
-                                    // backoff.Reset(); allow backoff
+                                    if (backoff.Attempts >= 3)
+                                    {
+                                        OnTerminate(false).Wait();
+                                        return;
+                                    }
+
                                     loginCredentials.EmailVerificationCode = emailAuthCode;
                                 }
 
@@ -449,6 +464,8 @@ namespace SDroid
 
                                 // ignore
                                 break;
+                            default:
+                                throw;
                         }
                     }
                 }
@@ -456,7 +473,7 @@ namespace SDroid
             catch (Exception e)
             {
                 BotLogger.LogError(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
-                await OnTerminate().ConfigureAwait(false);
+                await OnTerminate(true).ConfigureAwait(false);
             }
         }
 
@@ -658,7 +675,7 @@ namespace SDroid
             {
                 BotLogger.LogError(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
                 await OnLoggedOut().ConfigureAwait(false);
-                await OnTerminate().ConfigureAwait(false);
+                await OnTerminate(false).ConfigureAwait(false);
             }
         }
 
@@ -955,7 +972,7 @@ namespace SDroid
             {
                 // On failure, terminate the bot
                 BotLogger.LogError(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
-                await OnTerminate().ConfigureAwait(false);
+                await OnTerminate(true).ConfigureAwait(false);
             }
             finally
             {
@@ -973,7 +990,7 @@ namespace SDroid
             // ignore
         }
 
-        protected virtual async Task OnTerminate()
+        protected virtual async Task OnTerminate(bool isCritical)
         {
             if (BotStatus == SteamBotStatus.Faulted || BotStatus == SteamBotStatus.Ready)
             {

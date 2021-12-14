@@ -155,9 +155,12 @@ namespace SDroid
             {
                 StalledLoginCheckTimer?.Dispose();
             }
+
             BotLogger.LogDebug("[{0}] Disconnecting from Steam network...", SteamId?.ConvertToUInt64());
             SteamClient?.Disconnect();
             await base.StopBot().ConfigureAwait(false);
+            LoginBackoff.Reset();
+            ConnectionBackoff.Reset();
         }
 
         /// <inheritdoc />
@@ -236,7 +239,7 @@ namespace SDroid
                     StalledLoginCheckTimer?.Dispose();
                 }
                 await OnLoggedOut().ConfigureAwait(false);
-                await OnTerminate().ConfigureAwait(false);
+                await OnTerminate(false).ConfigureAwait(false);
             }
         }
 
@@ -314,7 +317,7 @@ namespace SDroid
                         {
                             StalledLoginCheckTimer?.Dispose();
                         }
-                        await OnTerminate().ConfigureAwait(false);
+                        await OnTerminate(false).ConfigureAwait(false);
 
                         return;
                     }
@@ -516,6 +519,9 @@ namespace SDroid
 
             if (loggedOnCallback.Result == EResult.AccountLoginDeniedNeedTwoFactor)
             {
+                BotLogger.LogTrace("[{0}] Realigning authenticator clock.", SteamId?.ConvertToUInt64());
+                SteamTime.ReAlignTime().Wait();
+
                 BotLogger.LogDebug("[{0}] Requesting authenticator code.", SteamId?.ConvertToUInt64());
                 var mobileAuthCode = OnAuthenticatorCodeRequired().Result;
 
@@ -526,12 +532,12 @@ namespace SDroid
                     {
                         StalledLoginCheckTimer?.Dispose();
                     }
-                    OnTerminate().Wait();
+                    OnTerminate(false).Wait();
 
                     return;
                 }
 
-                LoginBackoff.Reset();
+                LoginBackoff.Reset(1);
                 LoginDetails.TwoFactorCode = mobileAuthCode;
             }
             else if (loggedOnCallback.Result == EResult.TwoFactorCodeMismatch)
@@ -549,12 +555,17 @@ namespace SDroid
                     {
                         StalledLoginCheckTimer?.Dispose();
                     }
-                    OnTerminate().Wait();
+                    OnTerminate(false).Wait();
 
                     return;
                 }
 
-                // LoginBackoff.Reset(); allow backoff
+                if (LoginBackoff.Attempts >= 3)
+                {
+                    OnTerminate(false).Wait();
+                    return;
+                }
+                
                 LoginDetails.TwoFactorCode = mobileAuthCode;
             }
             else if (
@@ -572,12 +583,17 @@ namespace SDroid
                     {
                         StalledLoginCheckTimer?.Dispose();
                     }
-                    OnTerminate().Wait();
+                    OnTerminate(false).Wait();
 
                     return;
                 }
 
-                // LoginBackoff.Reset(); allow backoff
+                if (LoginBackoff.Attempts >= 3)
+                {
+                    OnTerminate(false).Wait();
+                    return;
+                }
+                
                 LoginDetails.AuthCode = emailAuthCode;
             }
             else if (loggedOnCallback.Result == EResult.InvalidPassword)
@@ -592,12 +608,17 @@ namespace SDroid
                     {
                         StalledLoginCheckTimer?.Dispose();
                     }
-                    OnTerminate().Wait();
+                    OnTerminate(false).Wait();
 
                     return;
                 }
 
-                // LoginBackoff.Reset(); allow backoff
+                if (LoginBackoff.Attempts >= 3)
+                {
+                    OnTerminate(false).Wait();
+                    return;
+                }
+
                 LoginDetails.Password = password;
             }
             else if (loggedOnCallback.Result == EResult.ServiceUnavailable || loggedOnCallback.Result == EResult.TryAnotherCM)
@@ -606,12 +627,18 @@ namespace SDroid
                 {
                     StalledLoginCheckTimer?.Dispose();
                 }
-                OnTerminate().Wait();
+
+                OnTerminate(false).Wait();
                 return;
             }
             else if (loggedOnCallback.Result == EResult.RateLimitExceeded)
             {
                 // ignore
+            }
+            else
+            {
+                OnTerminate(true).Wait();
+                return;
             }
 
             InternalInitializeLogin().Wait();
@@ -881,7 +908,8 @@ namespace SDroid
             {
                 StalledLoginCheckTimer?.Dispose();
             }
-            await OnTerminate().ConfigureAwait(false);
+
+            await OnTerminate(false).ConfigureAwait(false);
         }
     }
 }

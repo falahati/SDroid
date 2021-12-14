@@ -26,9 +26,9 @@ namespace SDroid.Helpers
             Attempts++;
         }
 
-        public void Reset()
+        public void Reset(int attempts = 0)
         {
-            Attempts = 0;
+            Attempts = attempts;
         }
     }
 }
