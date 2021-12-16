@@ -17,8 +17,8 @@ namespace SDroid
     // ReSharper disable once ClassTooBig
     public abstract class SteamKitBot : SteamBot, ISteamKitBot
     {
-        protected ExponentialBackoff ConnectionBackoff = new ExponentialBackoff();
-        protected ExponentialBackoff LoginBackoff = new ExponentialBackoff();
+        protected ExponentialBackoff ConnectionBackoff = new ExponentialBackoff(20);
+        protected ExponentialBackoff LoginBackoff = new ExponentialBackoff(10);
         protected SteamUser.LogOnDetails LoginDetails;
         protected Timer StalledLoginCheckTimer;
         protected List<IDisposable> SubscribedCallbacks = new List<IDisposable>();

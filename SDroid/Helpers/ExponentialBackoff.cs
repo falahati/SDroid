@@ -17,13 +17,12 @@ namespace SDroid.Helpers
         public async Task Delay()
         {
             var delay = Math.Max(Math.Min((Math.Pow(2, Attempts) - 1) * _backOffFactor, 60 * 60), 0);
+            Attempts++;
 
             if (delay > 0.016)
             {
                 await Task.Delay(TimeSpan.FromSeconds(delay)).ConfigureAwait(false);
             }
-
-            Attempts++;
         }
 
         public void Reset(int attempts = 0)

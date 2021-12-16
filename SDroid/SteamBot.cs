@@ -338,7 +338,7 @@ namespace SDroid
                 }
 
                 var loginCredentials = new LoginCredentials(BotSettings.Username, password);
-                var backoff = new ExponentialBackoff();
+                var backoff = new ExponentialBackoff(10);
 
                 while (!CancellationTokenSource.IsCancellationRequested)
                 {
@@ -787,7 +787,7 @@ namespace SDroid
                     while (string.IsNullOrWhiteSpace(apiKey))
                     {
                         CancellationTokenSource.Token.ThrowIfCancellationRequested();
-                        var backoff = new ExponentialBackoff();
+                        var backoff = new ExponentialBackoff(10);
 
                         try
                         {
