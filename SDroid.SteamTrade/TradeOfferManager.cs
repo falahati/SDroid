@@ -379,8 +379,7 @@ namespace SDroid.SteamTrade
 
         public async Task Cancel(TradeOffer offer)
         {
-            if (!offer.IsOurOffer ||
-                offer.Status != TradeOfferStatus.Active)
+            if (!offer.IsOurOffer || (offer.Status != TradeOfferStatus.Active && offer.Status != TradeOfferStatus.InEscrow))
             {
                 throw new InvalidOperationException("Can't cancel a trade that is not active and/or not ours.");
             }
@@ -508,8 +507,7 @@ namespace SDroid.SteamTrade
 
         public async Task Decline(TradeOffer offer)
         {
-            if (offer.IsOurOffer ||
-                offer.Status != TradeOfferStatus.Active)
+            if (offer.IsOurOffer || (offer.Status != TradeOfferStatus.Active && offer.Status != TradeOfferStatus.InEscrow))
             {
                 throw new InvalidOperationException("Can't decline a trade that is not active and/or is ours.");
             }
