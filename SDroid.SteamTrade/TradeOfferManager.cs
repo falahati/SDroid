@@ -338,8 +338,10 @@ namespace SDroid.SteamTrade
 
         public async Task CancelAlternate(TradeOffer offer)
         {
-            if (!offer.IsOurOffer ||
-                offer.Status != TradeOfferStatus.Active)
+            if (
+                !offer.IsOurOffer ||
+                (offer.Status != TradeOfferStatus.Active && offer.Status != TradeOfferStatus.NeedsConfirmation && offer.Status != TradeOfferStatus.InEscrow)
+            )
             {
                 throw new InvalidOperationException("Can't cancel a trade that is not active and/or not ours.");
             }
@@ -379,7 +381,10 @@ namespace SDroid.SteamTrade
 
         public async Task Cancel(TradeOffer offer)
         {
-            if (!offer.IsOurOffer || (offer.Status != TradeOfferStatus.Active && offer.Status != TradeOfferStatus.InEscrow))
+            if (
+                !offer.IsOurOffer ||
+                (offer.Status != TradeOfferStatus.Active && offer.Status != TradeOfferStatus.NeedsConfirmation && offer.Status != TradeOfferStatus.InEscrow)
+            )
             {
                 throw new InvalidOperationException("Can't cancel a trade that is not active and/or not ours.");
             }
@@ -398,9 +403,9 @@ namespace SDroid.SteamTrade
                 shouldThrowExceptionOnTotalFailure: false
             ).ConfigureAwait(false);
 
-            if (response?.Success == true ||
-                (await GetTradeOffer(offer.TradeOfferId).ConfigureAwait(false)).Status ==
-                TradeOfferStatus.Canceled)
+            if (
+                response?.Success == true ||
+                (await GetTradeOffer(offer.TradeOfferId).ConfigureAwait(false)).Status == TradeOfferStatus.Canceled)
             {
                 return;
             }
