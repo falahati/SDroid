@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SDroid.SteamTrade.Helpers;
 using SDroid.SteamTrade.Models.UserInventory;
 
@@ -15,7 +16,7 @@ namespace SDroid.SteamTrade.InternalModels.InventoryJson
         public int Assets { get; set; }
 
         [JsonProperty("rgContexts")]
-        public Dictionary<long, InventoryAppContext> Contexts { get; set; }
+        public JToken Contexts { get; set; }
 
         [JsonProperty("icon")]
         public string Icon { get; set; }
@@ -46,7 +47,7 @@ namespace SDroid.SteamTrade.InternalModels.InventoryJson
                 AppId,
                 Name,
                 Icon,
-                Contexts.Values.Select(c => c.ToUserInventoryAppContext()).ToArray(),
+                Contexts.Type == JTokenType.Object ? Contexts.ToObject<Dictionary<string, InventoryAppContext>>().Values.Select(c => c.ToUserInventoryAppContext()).ToArray() : new UserInventoryAppContext[0],
                 InventoryLogo,
                 StoreVetted,
                 TradePermissions
