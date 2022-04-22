@@ -212,6 +212,11 @@ namespace SDroid.SteamMobile
                         )
                 ).ConfigureAwait(false);
 
+                if (serverResponse == null)
+                {
+                    throw new TokenInvalidException();
+                }
+
                 if (string.IsNullOrEmpty(serverResponse?.Response?.Token) &&
                     string.IsNullOrEmpty(serverResponse?.Response?.TokenSecure))
                 {
@@ -243,6 +248,8 @@ namespace SDroid.SteamMobile
             HttpWebResponse response = null;
             switch (exception)
             {
+                case TokenInvalidException _:
+                    return true;
                 case WebException webException:
                     response = webException.Response as HttpWebResponse;
                     break;
