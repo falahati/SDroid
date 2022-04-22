@@ -148,7 +148,9 @@ namespace SDroid
             }
 
             SessionCheckTimer?.Dispose();
+            SessionCheckTimer = null;
             AuthenticatorConfirmationTimer?.Dispose();
+            AuthenticatorConfirmationTimer = null;
 
             BotLogger.LogDebug("[{0}] Waiting for bot to stop.", SteamId?.ConvertToUInt64());
 
@@ -486,7 +488,9 @@ namespace SDroid
 
             StopBot().Wait();
             SessionCheckTimer?.Dispose();
+            SessionCheckTimer = null;
             AuthenticatorConfirmationTimer?.Dispose();
+            AuthenticatorConfirmationTimer = null;
             CancellationTokenSource?.Dispose();
             WebSessionLock?.Dispose();
             WebAccess = null;
@@ -550,44 +554,126 @@ namespace SDroid
                 catch (TokenExpiredException e)
                 {
                     BotLogger.LogWarning(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
-                    BotLogger.LogDebug("[{0}] Realigning time ...", SteamId?.ConvertToUInt64());
-                    await SteamTime.ReAlignTime();
-                    
-                    if (
-                        authenticatorBot.WebAccess.Session is MobileSession mobileSession &&
-                        authenticatorBot.WebAccess is SteamMobileWebAccess mobileWebAccess
-                    )
-                    {
-                        try
-                        {
-                            BotLogger.LogDebug("[{0}] Refreshing authenticator session after failed confirmation retrieval...", SteamId?.ConvertToUInt64());
-
-                            if (await mobileSession.RefreshSession(mobileWebAccess))
-                            {
-                                await OnNewWebSessionAvailable(mobileSession);
-                                if (isCallback)
-                                {
-                                    await OnAuthenticatorCheckConfirmations(false);
-                                }
-                            }
-                        }
-                        catch (TokenInvalidException)
-                        {
-                            BotLogger.LogDebug("[{0}] Session is invalid. Forcefully starting a new login process.", SteamId?.ConvertToUInt64());
-                            await BotLogin().ConfigureAwait(false);
-                        }
-                        catch (Exception e2)
-                        {
-                            BotLogger.LogWarning(e2, "[{0}] {1}", SteamId?.ConvertToUInt64(), e2.Message);
-                            BotLogger.LogWarning("[{0}] Failed to refresh authenticator session.", SteamId?.ConvertToUInt64());
-                        }
-                    }
+                    var _ = RecoverWebSession();
                 }
                 catch (Exception e)
                 {
                     BotLogger.LogWarning(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
                 }
             }
+        }
+
+        protected async Task<bool> RecoverWebSession()
+        {
+            try
+            {
+                // Check if the current session is still valid
+                if (WebAccess != null)
+                {
+                    BotLogger.LogTrace("[{0}] Trying current session.", SteamId?.ConvertToUInt64());
+
+                    if (await WebAccess.VerifySession().ConfigureAwait(false))
+                    {
+                        BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
+                        await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
+
+                        return true;
+                    }
+                }
+
+                // Check if the bot's authenticator holds a valid session or a session that can be extended
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                if (this is IAuthenticatorBot authenticatorController)
+                {
+                    BotLogger.LogTrace("[{0}] Trying authenticator session.", SteamId?.ConvertToUInt64());
+
+                    if (authenticatorController.BotAuthenticatorSettings?.Authenticator?.Session != null)
+                    {
+                        var webAccess = new SteamMobileWebAccess(
+                            authenticatorController.BotAuthenticatorSettings.Authenticator.Session,
+                            IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress)
+                                ? ipAddress
+                                : IPAddress.Any,
+                            string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy)
+                        );
+
+                        BotLogger.LogTrace("[{0}] Refreshing authenticator session.", SteamId?.ConvertToUInt64());
+
+                        if (
+                            await authenticatorController.BotAuthenticatorSettings.Authenticator.Session
+                                .RefreshSession(webAccess).ConfigureAwait(false)
+                        )
+                        {
+                            if (await webAccess.VerifySession().ConfigureAwait(false))
+                            {
+                                BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
+                                await OnNewWebSessionAvailable(webAccess.Session).ConfigureAwait(false);
+
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                if (BotSettings.Session != null && BotSettings.Session.HasEnoughInfo() && WebAccess == null)
+                {
+                    if (this is IAuthenticatorBot)
+                    {
+                        BotLogger.LogTrace("[{0}] Trying last saved session as authenticator session.", SteamId?.ConvertToUInt64());
+
+                        var webAccess = new SteamMobileWebAccess(
+                            BotSettings.Session is MobileSession mobileSession ? mobileSession : new MobileSession(
+                                BotSettings.Session.RememberLoginToken,
+                                BotSettings.Session.SteamId,
+                                BotSettings.Session.SteamLogin,
+                                BotSettings.Session.SteamLoginSecure,
+                                BotSettings.Session.SessionId,
+                                BotSettings.Session.RememberLoginToken,
+                                BotSettings.Session.SteamMachineAuthenticationTokens
+                            ),
+                            IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress) ? ipAddress : IPAddress.Any,
+                            string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy)
+                        );
+
+                        if (await webAccess.VerifySession().ConfigureAwait(false))
+                        {
+                            BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
+                            await OnNewWebSessionAvailable(webAccess.Session).ConfigureAwait(false);
+
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        BotLogger.LogTrace("[{0}] Trying last saved session.", SteamId?.ConvertToUInt64());
+
+                        var webAccess = new SteamWebAccess(
+                            BotSettings.Session,
+                            IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress) ? ipAddress : IPAddress.Any,
+                            string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy)
+                        );
+
+                        if (await webAccess.VerifySession().ConfigureAwait(false))
+                        {
+                            BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
+                            await OnNewWebSessionAvailable(webAccess.Session).ConfigureAwait(false);
+
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch (TokenExpiredException e)
+            {
+                BotLogger.LogWarning(e, "[{0}] Failed to recover WebSession, Error: {1}", SteamId?.ConvertToUInt64(), e.Message);
+                await OnTerminate(false).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                BotLogger.LogWarning(e, "[{0}] Failed to recover WebSession, Error: {1}", SteamId?.ConvertToUInt64(), e.Message);
+            }
+
+            return false;
         }
 
         protected virtual async Task<string> OnAuthenticatorCodeRequired()
@@ -913,6 +999,7 @@ namespace SDroid
                 BotLogger.LogTrace("[{0}] Initializing Session check timer.", SteamId?.ConvertToUInt64());
 
                 // If this is an actual login, start the session check timer and change the bot's status
+                SessionCheckTimer?.Dispose();
                 SessionCheckTimer = new Timer(
                     async state =>
                     {
@@ -939,6 +1026,7 @@ namespace SDroid
                 if (this is IAuthenticatorBot authenticatorBot)
                 {
                     BotLogger.LogTrace("[{0}] Initializing IAuthenticatorBot's Authenticator Confirmation Timer.", SteamId?.ConvertToUInt64());
+                    AuthenticatorConfirmationTimer?.Dispose();
                     AuthenticatorConfirmationTimer = new Timer(
                         async state =>
                         {
