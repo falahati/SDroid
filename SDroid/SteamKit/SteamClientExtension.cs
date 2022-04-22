@@ -30,11 +30,11 @@ namespace SDroid.SteamKit
                 encryptedSessionKey = rsa.Encrypt(sessionKey);
             }
 
-            var loginKey = new byte[20];
-            Array.Copy(Encoding.ASCII.GetBytes(userNonce), loginKey, userNonce.Length);
-
             // AES encrypt the loginkey with our session key.
-            var encryptedLoginKey = CryptoHelper.SymmetricEncrypt(loginKey, sessionKey);
+            var encryptedLoginKey = CryptoHelper.SymmetricEncrypt(
+                Encoding.ASCII.GetBytes(userNonce),
+                sessionKey
+            );
 
             try
             {
@@ -42,12 +42,13 @@ namespace SDroid.SteamKit
                 {
                     var result = await steamUserAuth.CallAsync(
                         HttpMethod.Post,
-                        "AuthenticateUser", 1,
+                        "AuthenticateUser", 
+                        1,
                         new Dictionary<string, object>
                         {
                             {"steamid", client.SteamID.ConvertToUInt64().ToString()},
-                            {"sessionkey", HttpUtility.UrlEncode(encryptedSessionKey)},
-                            {"encrypted_loginkey", HttpUtility.UrlEncode(encryptedLoginKey)}
+                            {"sessionkey", encryptedSessionKey},
+                            {"encrypted_loginkey", encryptedLoginKey}
                         }
                     ).ConfigureAwait(false);
 
