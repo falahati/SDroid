@@ -563,7 +563,7 @@ namespace SDroid
             }
         }
 
-        protected async Task<bool> RecoverWebSession()
+        protected virtual async Task<bool> RecoverWebSession()
         {
             try
             {

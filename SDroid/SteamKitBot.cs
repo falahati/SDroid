@@ -9,6 +9,7 @@ using SDroid.Helpers;
 using SDroid.Interfaces;
 using SDroid.SteamKit;
 using SDroid.SteamMobile;
+using SDroid.SteamMobile.Exceptions;
 using SDroid.SteamWeb;
 using SteamKit2;
 
@@ -440,7 +441,7 @@ namespace SDroid
 
         // ReSharper disable once MethodTooLong
         // ReSharper disable once ExcessiveIndentation
-        private void OnInternalSteamUserLoggedOn(SteamUser.LoggedOnCallback loggedOnCallback)
+        private async void OnInternalSteamUserLoggedOn(SteamUser.LoggedOnCallback loggedOnCallback)
         {
             lock (LocalLock)
             {
@@ -465,7 +466,8 @@ namespace SDroid
                 }
 
                 BotLogger.LogTrace("[{0}] Retriving WebAPI and WebAccess session.", SteamId?.ConvertToUInt64());
-                var session = SteamClient.AuthenticateWebSession(loggedOnCallback.WebAPIUserNonce).Result;
+                var session = await SteamClient.AuthenticateWebSession(loggedOnCallback.WebAPIUserNonce);
+                var success = false;
 
                 if (session != null && session.HasEnoughInfo())
                 {
@@ -482,14 +484,11 @@ namespace SDroid
                         BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
                         OnNewWebSessionAvailable(session).Wait();
                         LoginBackoff.Reset();
-                    }
-                    else
-                    {
-                        BotLogger.LogDebug("[{0}] Bad session retrieved. Requesting a new WebAPI user nonce.", SteamId?.ConvertToUInt64());
-                        SteamUser.RequestWebAPIUserNonce();
+                        success = true;
                     }
                 }
-                else
+
+                if (!success)
                 {
                     BotLogger.LogDebug("[{0}] Failed to retrieve WebAccess session. Trying to recover session.", SteamId?.ConvertToUInt64());
 
@@ -502,6 +501,7 @@ namespace SDroid
                         BotLogger.LogDebug("[{0}] Forcefully starting a new login process.", SteamId?.ConvertToUInt64());
                         InternalInitializeLogin().Wait();
                     }
+
                 }
 
                 return;
@@ -642,6 +642,58 @@ namespace SDroid
             }
 
             InternalInitializeLogin().Wait();
+        }
+
+        protected override async Task<bool> RecoverWebSession()
+        {
+            try
+            {
+                //// Check if the current session is still valid
+                //if (WebAccess != null)
+                //{
+                //    BotLogger.LogTrace("[{0}] Trying current session.", SteamId?.ConvertToUInt64());
+
+                //    if (await WebAccess.VerifySession().ConfigureAwait(false))
+                //    {
+                //        BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
+                //        await OnNewWebSessionAvailable(WebAccess.Session).ConfigureAwait(false);
+
+                //        return true;
+                //    }
+                //}
+
+                BotLogger.LogTrace("[{0}] Retriving WebAPI and WebAccess session.", SteamId?.ConvertToUInt64());
+                var nonce = await SteamUser.RequestWebAPIUserNonce();
+                var session = await SteamClient.AuthenticateWebSession(nonce.Nonce);
+
+                if (session != null && session.HasEnoughInfo())
+                {
+                    var webAccess = new SteamWebAccess(
+                               session,
+                               IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress)
+                                   ? ipAddress
+                                   : IPAddress.Any,
+                               string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy)
+                           );
+                    if (webAccess.VerifySession().Result)
+                    {
+                        BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
+                        await OnNewWebSessionAvailable(session).ConfigureAwait(false);
+                        return true;
+                    }
+                }
+            }
+            catch (TokenExpiredException e)
+            {
+                BotLogger.LogWarning(e, "[{0}] Failed to recover WebSession, Error: {1}", SteamId?.ConvertToUInt64(), e.Message);
+                await OnTerminate(false).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                BotLogger.LogWarning(e, "[{0}] Failed to recover WebSession, Error: {1}", SteamId?.ConvertToUInt64(), e.Message);
+            }
+
+            return await base.RecoverWebSession();
         }
 
         private void OnInternalSteamUserLoginKeyExchange(SteamUser.LoginKeyCallback loginKeyCallback)
