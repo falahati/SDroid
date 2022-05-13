@@ -336,7 +336,7 @@ namespace SDroid.SteamTrade
             throw new TradeOfferException("Failed to accept trade offer.");
         }
 
-        public async Task CancelAlternate(TradeOffer offer)
+        public async Task Cancel(TradeOffer offer)
         {
             if (
                 !offer.IsOurOffer ||
@@ -365,8 +365,10 @@ namespace SDroid.SteamTrade
                 shouldThrowExceptionOnTotalFailure: false
             ).ConfigureAwait(false);
 
-            if (response?.TradeOfferId == offer.TradeOfferId ||
-                (await GetTradeOffer(offer.TradeOfferId).ConfigureAwait(false))?.Status == TradeOfferStatus.Canceled)
+            if (
+                response?.TradeOfferId == offer.TradeOfferId ||
+                (await GetTradeOffer(offer.TradeOfferId).ConfigureAwait(false))?.Status == TradeOfferStatus.Canceled
+            )
             {
                 return;
             }
@@ -379,39 +381,39 @@ namespace SDroid.SteamTrade
             throw new TradeOfferException("Failed to cancel trade offer.");
         }
 
-        public async Task Cancel(TradeOffer offer)
-        {
-            if (
-                !offer.IsOurOffer ||
-                (offer.Status != TradeOfferStatus.Active && offer.Status != TradeOfferStatus.NeedsConfirmation && offer.Status != TradeOfferStatus.InEscrow)
-            )
-            {
-                throw new InvalidOperationException("Can't cancel a trade that is not active and/or not ours.");
-            }
+        //public async Task Cancel(TradeOffer offer)
+        //{
+        //    if (
+        //        !offer.IsOurOffer ||
+        //        (offer.Status != TradeOfferStatus.Active && offer.Status != TradeOfferStatus.NeedsConfirmation && offer.Status != TradeOfferStatus.InEscrow)
+        //    )
+        //    {
+        //        throw new InvalidOperationException("Can't cancel a trade that is not active and/or not ours.");
+        //    }
 
-            var response = await _tradeOfferOptions.RetryOperationAsync(
-                () => SteamWebAPI.RequestObject<CancelTradeOfferResponse>(
-                    "IEconService",
-                    SteamWebAccessRequestMethod.Post,
-                    "CancelTradeOffer",
-                    "v1",
-                    new
-                    {
-                        tradeofferid = offer.TradeOfferId
-                    }
-                ),
-                shouldThrowExceptionOnTotalFailure: false
-            ).ConfigureAwait(false);
+        //    var response = await _tradeOfferOptions.RetryOperationAsync(
+        //        () => SteamWebAPI.RequestObject<CancelTradeOfferResponse>(
+        //            "IEconService",
+        //            SteamWebAccessRequestMethod.Post,
+        //            "CancelTradeOffer",
+        //            "v1",
+        //            new
+        //            {
+        //                tradeofferid = offer.TradeOfferId
+        //            }
+        //        ),
+        //        shouldThrowExceptionOnTotalFailure: false
+        //    ).ConfigureAwait(false);
 
-            if (
-                response?.Success == true ||
-                (await GetTradeOffer(offer.TradeOfferId).ConfigureAwait(false)).Status == TradeOfferStatus.Canceled)
-            {
-                return;
-            }
+        //    if (
+        //        response?.Success == true ||
+        //        (await GetTradeOffer(offer.TradeOfferId).ConfigureAwait(false)).Status == TradeOfferStatus.Canceled)
+        //    {
+        //        return;
+        //    }
 
-            throw new TradeOfferException("Failed to cancel trade offer.");
-        }
+        //    throw new TradeOfferException("Failed to cancel trade offer.");
+        //}
 
         public async Task<long> CounterOffer(
             TradeOffer oldOffer,
@@ -469,10 +471,9 @@ namespace SDroid.SteamTrade
             throw new TradeOfferException("Failed to send counter offer.");
         }
 
-        public async Task DeclineAlternate(TradeOffer offer)
+        public async Task Decline(TradeOffer offer)
         {
-            if (offer.IsOurOffer ||
-                offer.Status != TradeOfferStatus.Active)
+            if (offer.IsOurOffer || (offer.Status != TradeOfferStatus.Active && offer.Status != TradeOfferStatus.InEscrow))
             {
                 throw new InvalidOperationException("Can't decline a trade that is not active and/or is ours.");
             }
@@ -510,35 +511,35 @@ namespace SDroid.SteamTrade
             throw new TradeOfferException("Failed to decline trade offer.");
         }
 
-        public async Task Decline(TradeOffer offer)
-        {
-            if (offer.IsOurOffer || (offer.Status != TradeOfferStatus.Active && offer.Status != TradeOfferStatus.InEscrow))
-            {
-                throw new InvalidOperationException("Can't decline a trade that is not active and/or is ours.");
-            }
+        //public async Task Decline(TradeOffer offer)
+        //{
+        //    if (offer.IsOurOffer || (offer.Status != TradeOfferStatus.Active && offer.Status != TradeOfferStatus.InEscrow))
+        //    {
+        //        throw new InvalidOperationException("Can't decline a trade that is not active and/or is ours.");
+        //    }
 
-            var response = await _tradeOfferOptions.RetryOperationAsync(
-                () => SteamWebAPI.RequestObject<DeclineTradeOfferResponse>(
-                    "IEconService",
-                    SteamWebAccessRequestMethod.Post,
-                    "DeclineTradeOffer",
-                    "v1",
-                    new
-                    {
-                        tradeofferid = offer.TradeOfferId
-                    }
-                )
-            ).ConfigureAwait(false);
+        //    var response = await _tradeOfferOptions.RetryOperationAsync(
+        //        () => SteamWebAPI.RequestObject<DeclineTradeOfferResponse>(
+        //            "IEconService",
+        //            SteamWebAccessRequestMethod.Post,
+        //            "DeclineTradeOffer",
+        //            "v1",
+        //            new
+        //            {
+        //                tradeofferid = offer.TradeOfferId
+        //            }
+        //        )
+        //    ).ConfigureAwait(false);
 
-            if (response?.Success == true ||
-                (await GetTradeOffer(offer.TradeOfferId).ConfigureAwait(false))?.Status ==
-                TradeOfferStatus.Declined)
-            {
-                return;
-            }
+        //    if (response?.Success == true ||
+        //        (await GetTradeOffer(offer.TradeOfferId).ConfigureAwait(false))?.Status ==
+        //        TradeOfferStatus.Declined)
+        //    {
+        //        return;
+        //    }
 
-            throw new TradeOfferException("Failed to decline trade offer.");
-        }
+        //    throw new TradeOfferException("Failed to decline trade offer.");
+        //}
 
         public Task<EscrowDuration> GetEscrowDuration(SteamID partnerSteamId)
         {
