@@ -250,7 +250,14 @@ namespace SDroid.SteamWeb
                 return false;
             }
 
-            (await FetchBinary(new SteamWebAccessRequest(CommunityBaseUrl)).ConfigureAwait(false)).Dispose();
+            try
+            {
+                (await FetchBinary(new SteamWebAccessRequest(CommunityBaseUrl)).ConfigureAwait(false)).Dispose();
+            }
+            catch
+            {
+                return false;
+            }
 
             return !string.IsNullOrWhiteSpace(Session?.SteamLogin) ||
                    !string.IsNullOrWhiteSpace(Session?.SteamLoginSecure);
