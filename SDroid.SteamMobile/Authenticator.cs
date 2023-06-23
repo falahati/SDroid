@@ -31,14 +31,10 @@ namespace SDroid.SteamMobile
         private const string MobileConfirmationsOperationsUrl =
             SteamWebAccess.CommunityBaseUrl + "/mobileconf/multiajaxop";
 
-        private const string MobileConfirmationsUrl = SteamWebAccess.CommunityBaseUrl + "/mobileconf/conf";
+        private const string MobileConfirmationsUrl = SteamWebAccess.CommunityBaseUrl + "/mobileconf/getlist";
         protected const long SteamGuardCodeGenerationStep = 30L;
         protected const int SteamGuardCodeLength = 5;
-
-        protected static readonly Regex ConfirmationRegex = new Regex(
-            "<div class=\"mobileconf_list_entry\" id=\"conf[0-9]+\" data-confid=\"(\\d+)\" data-key=\"(\\d+)\" data-type=\"(\\d+)\" data-creator=\"(\\d+)\""
-        );
-
+        
         protected static readonly char[] SteamGuardCodeTranslations =
         {
             '2', '3', '4', '5', '6', '7', '8', '9', 'B', 'C',
@@ -106,11 +102,14 @@ namespace SDroid.SteamMobile
             if (authenticator.Session == null || !authenticator.Session.HasEnoughInfo())
             {
                 var sessionData = JsonConvert.DeserializeObject<MobileSession>(serialized);
-                authenticator = new Authenticator(
-                    authenticator.AuthenticatorData,
-                    sessionData,
-                    authenticator.DeviceId
-                );
+                if (sessionData?.HasEnoughInfo() == true)
+                {
+                    authenticator = new Authenticator(
+                        authenticator.AuthenticatorData,
+                        sessionData,
+                        authenticator.DeviceId
+                    );
+                }
             }
 
             // Tries to extract steam guard machine authentication tokens
@@ -346,7 +345,7 @@ namespace SDroid.SteamMobile
             {
                 var parameters = await GetConfirmationParameters("conf").ConfigureAwait(false);
                 var response = await OperationRetryHelper.Default.RetryOperationAsync(
-                    () => SteamWeb.FetchString(
+                    () => SteamWeb.FetchObject<ConfirmationsResponse>(
                         new SteamWebAccessRequest(
                             MobileConfirmationsUrl,
                             SteamWebAccessRequestMethod.Get,
@@ -355,16 +354,9 @@ namespace SDroid.SteamMobile
                     )
                 ).ConfigureAwait(false);
 
-                /*
-              So you're going to see this abomination and you're going to be upset.
-              It's understandable. But the thing is, regex for HTML -- while awful -- makes this way faster than parsing a DOM, plus we don't need another library.
-              And because the data is always in the same place and same format... It's not as if we're trying to naturally understand HTML here. Just extract strings.
-              I'm sorry. 
-            */
-
-                if (response == null || !ConfirmationRegex.IsMatch(response))
+                if (!response.Success)
                 {
-                    if (string.IsNullOrWhiteSpace(response) || !response.Contains("id=\"mobileconf_empty\""))
+                    if (response.NeedsAuthentication)
                     {
                         throw new TokenInvalidException();
                     }
@@ -372,22 +364,18 @@ namespace SDroid.SteamMobile
                     return Array.Empty<Confirmation>();
                 }
 
-                return ConfirmationRegex.Matches(response).Cast<Match>()
-                    .Where(match => match.Groups.Count == 5)
-                    .Select(
-                        match =>
-                        {
-                            if (ulong.TryParse(match.Groups[1].Value, out var id) &&
-                                ulong.TryParse(match.Groups[2].Value, out var key) &&
-                                int.TryParse(match.Groups[3].Value, out var type) &&
-                                ulong.TryParse(match.Groups[4].Value, out var creator))
-                            {
-                                return new Confirmation(id, key, (ConfirmationType) type, creator);
-                            }
-
-                            return null;
-                        }
-                    ).Where(confirmation => confirmation != null).ToArray();
+                return response.Confirmations.Select(
+                    (c) => new Confirmation(
+                        c.Id,
+                        c.Nonce,
+                        c.Type,
+                        c.CreatorId,
+                        c.Icon,
+                        c.Headline,
+                        c.Summary.ToArray(),
+                        new DateTime(1970, 01, 01, 0, 0, 0, DateTimeKind.Utc).AddSeconds(c.CreationTime)
+                    )
+                ).ToArray();
             }
             catch (Exception e)
             {

@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SDroid.SteamMobile.Exceptions;
 using SDroid.SteamMobile.Models.MobileAuthenticationAPI;
-using SDroid.SteamMobile.Models.MobileLoginJson;
 using SDroid.SteamWeb;
 using SDroid.SteamWeb.Models;
 
@@ -21,7 +19,7 @@ namespace SDroid.SteamMobile
     {
         public const string ClientName = "android";
 
-        public const string ClientVersion = "0 (2.1.3)";
+        public const string ClientVersion = "3067969+ (2.1.3)";
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="MobileSession" /> class.
@@ -67,17 +65,17 @@ namespace SDroid.SteamMobile
             );
         }
 
-        internal MobileSession(MobileLoginOAuthModel oAuth, string sessionId) :
+        public MobileSession(LoginResponseTransferParameters transferParameters, string sessionId) :
             this(
-                oAuth.OAuthToken,
-                oAuth.SteamId,
-                oAuth.SteamId + "%7C%7C" + oAuth.Token,
-                oAuth.SteamId + "%7C%7C" + oAuth.TokenSecure,
+                transferParameters.AuthenticationToken,
+                transferParameters.SteamId,
+                transferParameters.SteamId + "%7C%7C" + transferParameters.Token,
+                transferParameters.SteamId + "%7C%7C" + transferParameters.TokenSecure,
                 sessionId,
                 null,
                 new Dictionary<ulong, string>
                 {
-                    {oAuth.SteamId, oAuth.WebCookie}
+                    { transferParameters.SteamId, transferParameters.WebCookie }
                 }
             )
         {
@@ -186,7 +184,7 @@ namespace SDroid.SteamMobile
         public override bool HasEnoughInfo()
         {
             return base.HasEnoughInfo() &&
-                   !string.IsNullOrWhiteSpace(OAuthToken) &&
+                   //!string.IsNullOrWhiteSpace(OAuthToken) &&
                    SteamId > 0;
         }
 
@@ -196,6 +194,11 @@ namespace SDroid.SteamMobile
         /// <returns>true if the operation completed successfully; otherwise false</returns>
         public async Task<bool> RefreshSession(SteamMobileWebAccess mobileWebAccess)
         {
+            if (string.IsNullOrWhiteSpace(OAuthToken))
+            {
+                return false;
+            }
+
             try
             {
                 var serverResponse = await OperationRetryHelper.Default.RetryOperationAsync(

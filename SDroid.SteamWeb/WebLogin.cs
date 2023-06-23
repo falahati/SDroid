@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SDroid.SteamWeb.Exceptions;
 using SDroid.SteamWeb.InternalModels;
+using SDroid.SteamWeb.Models;
 
 namespace SDroid.SteamWeb
 {
@@ -14,13 +15,13 @@ namespace SDroid.SteamWeb
     /// </summary>
     public class WebLogin
     {
-        protected const string LoginCaptchaUrl = SteamWebAccess.CommunityBaseUrl + "/login/rendercaptcha/";
+        protected virtual string LoginCaptchaUrl => $"{SteamWebAccess.CommunityBaseUrl}/public/captcha.php?gid=";
 
-        protected const string LoginInitializeUrl = SteamWebAccess.CommunityBaseUrl + "/login";
+        protected virtual string LoginInitializeUrl => $"{SteamWebAccess.CommunityBaseUrl}/login";
 
-        protected const string WebLoginRSAUrl = SteamWebAccess.CommunityBaseUrl + "/login/getrsakey";
+        protected virtual string WebLoginRSAUrl => $"{SteamWebAccess.CommunityBaseUrl}/login/getrsakey";
 
-        protected const string WebLoginUrl = SteamWebAccess.CommunityBaseUrl + "/login/dologin";
+        protected virtual string WebLoginUrl => $"{SteamWebAccess.CommunityBaseUrl}/login/dologin";
 
         private static readonly DateTime Epoch = new DateTime(1970, 1, 1);
         protected byte[] CachedCaptchaImage { get; set; }

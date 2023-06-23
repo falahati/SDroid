@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 
-namespace SDroid.SteamWeb.InternalModels
+namespace SDroid.SteamWeb.Models
 {
-    internal class LoginResponse
+    public class LoginResponse
     {
         [JsonProperty("captcha_gid")]
         public string CaptchaGID { get; set; }

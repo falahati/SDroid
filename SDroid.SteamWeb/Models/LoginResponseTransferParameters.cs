@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 
-namespace SDroid.SteamWeb.InternalModels
+namespace SDroid.SteamWeb.Models
 {
-    internal class LoginResponseTransferParameters
+    public class LoginResponseTransferParameters
     {
         [JsonProperty("steamid")]
         public ulong SteamId { get; set; }

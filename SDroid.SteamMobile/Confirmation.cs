@@ -10,12 +10,16 @@ namespace SDroid.SteamMobile
     {
         // ReSharper disable once TooManyDependencies
         [JsonConstructor]
-        public Confirmation(ulong id, ulong key, ConfirmationType type, ulong creator)
+        public Confirmation(ulong id, ulong key, ConfirmationType type, ulong creator, string icon, string headline, string[] summary, DateTime created)
         {
             Id = id;
             Key = key;
             Creator = creator;
-
+            Icon = icon;
+            Headline = headline;
+            Summary = summary;
+            Created = created;
+            
             // Doesn't matter if we are not sure about all confirmation types. 
             // Probably so as the library user. And it is always possible to convert to int.
             Type = type;
@@ -41,6 +45,26 @@ namespace SDroid.SteamMobile
         ///     Gets the type of this confirmation.
         /// </summary>
         public ConfirmationType Type { get; }
+        
+        /// <summary>
+        ///     Gets the icon of the confirmation.
+        /// </summary>
+        public string Icon { get; }
+
+        /// <summary>
+        ///     Gets the title of the confirmation.
+        /// </summary>
+        public string Headline { get; }
+
+        /// <summary>
+        ///     Gets the description of the confirmation.
+        /// </summary>
+        public string[] Summary { get; }
+
+        /// <summary>
+        ///     Gets the date and time at which this confirmation was created.
+        /// </summary>
+        public DateTime Created { get; }
 
         /// <inheritdoc />
         public bool Equals(Confirmation other)

@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 using Newtonsoft.Json;
-using SDroid.SteamMobile.Models.MobileLoginJson;
 using SDroid.SteamWeb;
 using SDroid.SteamWeb.Exceptions;
+using SDroid.SteamWeb.Models;
 
 namespace SDroid.SteamMobile
 {
@@ -13,8 +13,13 @@ namespace SDroid.SteamMobile
     {
         protected const string ClientOAuthId = "DE45CD61";
         protected const string ClientOAuthScope = "read_profile write_profile read_client write_client";
-        private const string MobileLoginUrl = SteamWebAccess.CommunityBaseUrl + "/mobilelogin";
-        
+
+        protected override string LoginInitializeUrl => $"{SteamWebAccess.CommunityBaseUrl}/mobilelogin";
+
+        protected override string WebLoginRSAUrl => $"{SteamWebAccess.CommunityBaseUrl}/mobilelogin/getrsakey";
+
+        protected override string WebLoginUrl => $"{SteamWebAccess.CommunityBaseUrl}/mobilelogin/dologin";
+
         /// <inheritdoc />
         protected override async Task<SteamWebAccessRequest> ConstructLoginRequest(LoginCredentials credentials)
         {
@@ -29,7 +34,7 @@ namespace SDroid.SteamMobile
                 };
 
                 request.FormData = oAuthArguments.Concat(request.FormData);
-                request.Referer = oAuthArguments.AppendToUrl(MobileLoginUrl);
+                request.Referer = oAuthArguments.AppendToUrl(LoginInitializeUrl);
             }
 
             return request;
@@ -51,15 +56,19 @@ namespace SDroid.SteamMobile
         {
             if (await base.ProcessLoginResponse(response).ConfigureAwait(false))
             {
-                var loginResponse = JsonConvert.DeserializeObject<MobileLoginResponse>(response);
+                var loginResponse = JsonConvert.DeserializeObject<LoginResponse>(response);
 
-                if (!(loginResponse.OAuthToken?.OAuthToken?.Length > 0))
+                if (string.IsNullOrWhiteSpace(loginResponse?.TransferParameters.AuthenticationToken))
                 {
                     throw new UserLoginException(UserLoginErrorCode.GeneralFailure, this);
                 }
-                
-                SteamWebAccess = new SteamMobileWebAccess(new MobileSession(loginResponse.OAuthToken,
-                    SteamWebAccess?.Session?.SessionId));
+
+                SteamWebAccess = new SteamMobileWebAccess(
+                    new MobileSession(
+                        loginResponse.TransferParameters,
+                        SteamWebAccess?.Session?.SessionId
+                    )
+                );
 
                 return true;
             }

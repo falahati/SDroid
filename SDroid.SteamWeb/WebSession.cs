@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Newtonsoft.Json;
-using SDroid.SteamWeb.InternalModels;
+using SDroid.SteamWeb.Models;
 
 namespace SDroid.SteamWeb
 {
@@ -44,7 +44,7 @@ namespace SDroid.SteamWeb
             SteamId = steamId;
         }
 
-        internal WebSession(LoginResponseTransferParameters transferParameters, string sessionId) :
+        public WebSession(LoginResponseTransferParameters transferParameters, string sessionId) :
             this(
                 transferParameters.SteamId,
                 transferParameters.SteamId + "%7C%7C" + transferParameters.Token,
