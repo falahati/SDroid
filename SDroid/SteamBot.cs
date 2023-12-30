@@ -53,7 +53,7 @@ namespace SDroid
 
         protected virtual SteamID SteamId
         {
-            get => WebAccess?.Session?.SteamId != null ? new SteamID(WebAccess.Session.SteamId.Value) : null;
+            get => WebAccess?.Session?.SteamId != null ? new SteamID(WebAccess.Session.SteamId) : null;
         }
 
         protected SteamWebAccess WebAccess { get; set; }
@@ -285,13 +285,10 @@ namespace SDroid
 
                         var webAccess = new SteamMobileWebAccess(
                             BotSettings.Session is MobileSession mobileSession ? mobileSession : new MobileSession(
-                                BotSettings.Session.RememberLoginToken,
                                 BotSettings.Session.SteamId,
-                                BotSettings.Session.SteamLogin,
-                                BotSettings.Session.SteamLoginSecure,
-                                BotSettings.Session.SessionId,
-                                BotSettings.Session.RememberLoginToken,
-                                BotSettings.Session.SteamMachineAuthenticationTokens
+                                BotSettings.Session.AccessToken,
+                                null,
+                                BotSettings.Session.SessionId
                             ),
                             IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress) ? ipAddress : IPAddress.Any,
                             string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy)
@@ -623,13 +620,10 @@ namespace SDroid
 
                         var webAccess = new SteamMobileWebAccess(
                             BotSettings.Session is MobileSession mobileSession ? mobileSession : new MobileSession(
-                                BotSettings.Session.RememberLoginToken,
                                 BotSettings.Session.SteamId,
-                                BotSettings.Session.SteamLogin,
-                                BotSettings.Session.SteamLoginSecure,
-                                BotSettings.Session.SessionId,
-                                BotSettings.Session.RememberLoginToken,
-                                BotSettings.Session.SteamMachineAuthenticationTokens
+                                BotSettings.Session.AccessToken,
+                                null,
+                                BotSettings.Session.SessionId
                             ),
                             IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress) ? ipAddress : IPAddress.Any,
                             string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy)
@@ -769,6 +763,10 @@ namespace SDroid
         {
             throw new NotImplementedException();
         }
+        protected virtual Task<bool> OnDeviceConfirmationRequired()
+        {
+            throw new NotImplementedException();
+        }
 
         protected virtual Task OnLoggedIn()
         {
@@ -809,13 +807,10 @@ namespace SDroid
                     if (!(session is MobileSession))
                     {
                         session = new MobileSession(
-                            session.RememberLoginToken,
                             session.SteamId,
-                            session.SteamLogin,
-                            session.SteamLoginSecure,
-                            session.SessionId,
-                            session.RememberLoginToken,
-                            session.SteamMachineAuthenticationTokens
+                            session.AccessToken,
+                            null,
+                            session.SessionId
                         );
                     }
 

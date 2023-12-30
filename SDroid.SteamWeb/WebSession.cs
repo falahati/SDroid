@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using Newtonsoft.Json;
+using SDroid.SteamWeb.InternalModels;
 using SDroid.SteamWeb.Models;
 
 namespace SDroid.SteamWeb
@@ -13,48 +14,36 @@ namespace SDroid.SteamWeb
     /// <seealso cref="System.IEquatable{WebSession}" />
     public class WebSession : IEquatable<WebSession>
     {
-        private ulong? _steamCommunityId;
+        private ulong _steamCommunityId;
+        private string _accessToken;
         public const string CommunityCookieDomain = ".steamcommunity.com";
+        public const string StoreCookieDomain = "store.steampowered.com";
+
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="WebSession" /> class.
         /// </summary>
         /// <param name="steamId">The steam user identifier number.</param>
-        /// <param name="steamLogin">The steam user login.</param>
-        /// <param name="steamLoginSecure">The steam user login secure.</param>
+        /// <param name="accessToken">The sessions access token.</param>
         /// <param name="sessionId">The session identifier string.</param>
-        /// <param name="rememberLoginToken">The session remember login token</param>
-        /// <param name="steamMachineAuthenticationTokens">The session steam guard machine authentication tokens</param>
         [JsonConstructor]
         // ReSharper disable once TooManyDependencies
         public WebSession(
-            ulong? steamId,
-            string steamLogin,
-            string steamLoginSecure,
-            string sessionId,
-            string rememberLoginToken,
-            Dictionary<ulong, string> steamMachineAuthenticationTokens
+            ulong steamId,
+            string accessToken,
+            string sessionId
             ) : this()
         {
-            SteamLogin = steamLogin;
-            SteamLoginSecure = steamLoginSecure;
             SessionId = sessionId;
-            RememberLoginToken = rememberLoginToken;
-            SteamMachineAuthenticationTokens = steamMachineAuthenticationTokens;
             SteamId = steamId;
+            AccessToken = accessToken;
         }
 
         public WebSession(LoginResponseTransferParameters transferParameters, string sessionId) :
             this(
                 transferParameters.SteamId,
-                transferParameters.SteamId + "%7C%7C" + transferParameters.Token,
-                transferParameters.SteamId + "%7C%7C" + transferParameters.TokenSecure,
-                sessionId,
-                null,
-                new Dictionary<ulong, string>
-                {
-                    {transferParameters.SteamId, transferParameters.WebCookie}
-                }
+                transferParameters.TokenSecure,
+                sessionId
             )
         {
         }
@@ -62,10 +51,24 @@ namespace SDroid.SteamWeb
         /// <summary>
         ///     Gets the steam user identifier number.
         /// </summary>
-        public ulong? SteamId
+        public ulong SteamId
         {
-            get => _steamCommunityId ?? SteamMachineAuthenticationTokens?.Keys.FirstOrDefault();
+            get => _steamCommunityId;
             protected set => _steamCommunityId = value;
+        }
+
+        /// <summary>
+        ///     Gets the access token.
+        /// </summary>
+        public string AccessToken
+        {
+            get => _accessToken;
+            protected set
+            {
+                _accessToken = value;
+                SteamLogin = SteamId + "%7C%7C" + value;
+                SteamLoginSecure = SteamId + "%7C%7C" + value;
+            }
         }
 
         /// <summary>
@@ -74,9 +77,8 @@ namespace SDroid.SteamWeb
         public WebSession()
         {
             WebCookies = new CookieContainer();
-            WebCookies.Add(new Cookie("Steam_Language", SteamWebAccess.SteamLanguage, "/",
-                CommunityCookieDomain));
-            WebCookies.Add(new Cookie("dob", "", "/", CommunityCookieDomain));
+            AddCookie("Steam_Language", SteamWebAccess.SteamLanguage);
+            AddCookie("dob", "");
         }
 
         /// <summary>
@@ -90,24 +92,14 @@ namespace SDroid.SteamWeb
         {
             WebCookies = cookieContainer;
         }
-
-        /// <summary>
-        ///     Gets the web session remember login token
-        /// </summary>
-        public string RememberLoginToken
-        {
-            get => WebCookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl))["steamRememberLogin"]?.Value;
-            protected set =>
-                WebCookies.Add(new Cookie("steamRememberLogin", value ?? "", "/", CommunityCookieDomain));
-        }
-
+        
         /// <summary>
         ///     Gets the web session identifier string.
         /// </summary>
         public string SessionId
         {
             get => WebCookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl))["sessionid"]?.Value;
-            protected set => WebCookies.Add(new Cookie("sessionid", value ?? "", "/", CommunityCookieDomain));
+            protected set => AddCookie("sessionid", value ?? "");
         }
 
         /// <summary>
@@ -116,10 +108,7 @@ namespace SDroid.SteamWeb
         public string SteamLogin
         {
             get => WebCookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl))["steamLogin"]?.Value;
-            protected set => WebCookies.Add(new Cookie("steamLogin", value ?? "", "/", CommunityCookieDomain)
-            {
-                HttpOnly = true
-            });
+            protected set => AddCookie("steamLogin", value ?? "", true);
         }
 
         /// <summary>
@@ -128,43 +117,9 @@ namespace SDroid.SteamWeb
         public string SteamLoginSecure
         {
             get => WebCookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl))["steamLoginSecure"]?.Value;
-            protected set => WebCookies.Add(
-                new Cookie("steamLoginSecure", value ?? "", "/", CommunityCookieDomain)
-                {
-                    HttpOnly = true,
-                    Secure = true
-                });
+            protected set => AddCookie("steamLoginSecure", value ?? "", true, true);
         }
-
-        /// <summary>
-        ///     Gets the web session steam guard tokens
-        /// </summary>
-        public Dictionary<ulong, string> SteamMachineAuthenticationTokens
-        {
-            get => WebCookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl)).Cast<Cookie>()
-                .Where(c =>
-                    c?.Name.StartsWith("steamMachineAuth") == true &&
-                    !string.IsNullOrWhiteSpace(c.Value) &&
-                    ulong.TryParse(c.Name.Substring("steamMachineAuth".Length), out _)
-                )
-                .ToDictionary(
-                    c => ulong.Parse(c.Name.Substring("steamMachineAuth".Length)),
-                    c => c.Value
-                );
-            protected set
-            {
-                if (value == null)
-                {
-                    return;
-                }
-
-                foreach (var pair in value)
-                {
-                    WebCookies.Add(new Cookie("steamMachineAuth" + pair.Key, pair.Value ?? "", "/",
-                        CommunityCookieDomain));
-                }
-            }
-        }
+        
 
         [JsonIgnore]
         protected CookieContainer WebCookies { get; }
@@ -174,8 +129,7 @@ namespace SDroid.SteamWeb
         {
             return other != null &&
                    SessionId == other.SessionId &&
-                   SteamLogin == other.SteamLogin &&
-                   SteamLoginSecure == other.SteamLoginSecure;
+                   AccessToken == other.AccessToken;
         }
 
         public static bool operator ==(WebSession data1, WebSession data2)
@@ -204,16 +158,14 @@ namespace SDroid.SteamWeb
         {
             var hashCode = -823311899;
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SessionId);
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SteamLogin);
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SteamLoginSecure);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(AccessToken);
 
             return hashCode;
         }
 
         public virtual WebSession Clone()
         {
-            return new WebSession(SteamId, SteamLogin, SteamLoginSecure, SessionId, RememberLoginToken,
-                SteamMachineAuthenticationTokens);
+            return new WebSession(SteamId, AccessToken, SessionId);
         }
 
         /// <summary>
@@ -226,8 +178,51 @@ namespace SDroid.SteamWeb
         public virtual bool HasEnoughInfo()
         {
             return !string.IsNullOrWhiteSpace(SessionId) &&
-                   (!string.IsNullOrWhiteSpace(SteamLogin) ||
-                    !string.IsNullOrWhiteSpace(SteamLoginSecure));
+                   !string.IsNullOrWhiteSpace(AccessToken);
+        }
+
+        public bool IsExpired()
+        {
+            var token = AccessToken.Split('.').FirstOrDefault()?.Replace('-', '+').Replace('_', '/');
+            if (string.IsNullOrEmpty(token))
+            {
+                return true;
+            }
+
+            if (token.Length % 4 != 0)
+            {
+                token += new string('=', 4 - token.Length % 4);
+            }
+
+            var payload = JsonConvert.DeserializeObject<AccessTokenPayload>(
+                System.Text.Encoding.UTF8.GetString(
+                    Convert.FromBase64String(token)
+                )
+            );
+
+            if (payload == null)
+            {
+                return true;
+            }
+            
+            return DateTimeOffset.UtcNow.ToUnixTimeSeconds() > payload.Expiry;
+        }
+
+        public CookieContainer AddCookie(string name, string value, bool httpOnly = false, bool secure = false)
+        {
+            WebCookies.Add(
+                new Cookie(name, value, "/", CommunityCookieDomain)
+                {
+                    HttpOnly = httpOnly
+                }
+            );
+            WebCookies.Add(
+                new Cookie(name, value, "/", StoreCookieDomain)
+                {
+                    HttpOnly = httpOnly
+                }
+            );
+            return WebCookies;
         }
     }
 }

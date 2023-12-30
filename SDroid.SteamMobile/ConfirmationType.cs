@@ -6,9 +6,14 @@
     public enum ConfirmationType
     {
         /// <summary>
-        ///     A generic confirmation request
+        ///     Invalid confirmation request
         /// </summary>
-        GenericConfirmation = 1,
+        Invalid = 0,
+
+        /// <summary>
+        ///     Test
+        /// </summary>
+        Test = 1,
 
         /// <summary>
         ///     A trade confirmation request
@@ -18,11 +23,12 @@
         /// <summary>
         ///     A market sell transaction request
         /// </summary>
-        MarketSellTransaction = 3,
+        MarketListing = 3,
 
-        /// <summary>
-        ///     Unknown confirmation request
-        /// </summary>
-        Unknown = 0
+        FeatureOptOut = 4,
+
+        PhoneNumberChange = 5,
+
+        AccountRecovery = 6
     }
 }

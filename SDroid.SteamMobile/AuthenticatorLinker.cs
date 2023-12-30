@@ -72,7 +72,7 @@ namespace SDroid.SteamMobile
                         "v0001", new
                         {
                             steamid = SteamWeb.Session?.SessionId,
-                            access_token = (SteamWeb.Session as MobileSession)?.OAuthToken,
+                            access_token = (SteamWeb.Session as MobileSession)?.AccessToken,
                             activation_code = smsCode,
                             authenticator_code = requestedAuthenticator.GenerateSteamGuardCode(),
                             authenticator_time = SteamTime.GetUnixTime()
@@ -137,7 +137,7 @@ namespace SDroid.SteamMobile
                     "v0001", new
                     {
                         steamid = SteamWeb.Session?.SessionId,
-                        access_token = (SteamWeb.Session as MobileSession)?.OAuthToken,
+                        access_token = (SteamWeb.Session as MobileSession)?.AccessToken,
                         authenticator_type = 1,
                         device_identifier = deviceKey,
                         sms_phone_id = true

@@ -15,8 +15,7 @@ namespace SDroid.SteamWeb
         public const string CommunityBaseUrl = "https://steamcommunity.com";
         public const string SteamLanguage = "english";
 
-        protected const string UserAgent =
-            "Mozilla/5.0 (Linux; U; Android 4.1.1; en-us; Google Nexus 4 - 4.1.1 - API 16 - 768x1280 Build/JRO03S) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30";
+        protected const string UserAgent = "Dalvik/2.1.0 (Linux; U; Android 9; Valve Steam App Version/3)";
 
         private IPAddress _ipAddress;
         private IWebProxy _proxy;

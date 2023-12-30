@@ -111,68 +111,7 @@ namespace SDroid.SteamMobile
                     );
                 }
             }
-
-            // Tries to extract steam guard machine authentication tokens
-            if (authenticator.Session != null && !(authenticator.Session.SteamMachineAuthenticationTokens?.Count > 0))
-            {
-                var steamIdProperties = JsonConvert.DeserializeAnonymousType(
-                    serialized,
-                    new
-                    {
-                        steamid = (ulong?) null,
-                        steam_id = (ulong?) null,
-                        session = new
-                        {
-                            steamid = (ulong?) null,
-                            steam_id = (ulong?) null
-                        }
-                    }
-                );
-                var steamId = steamIdProperties.steam_id ??
-                              steamIdProperties.steamid ??
-                              steamIdProperties.session.steam_id ??
-                              steamIdProperties.session.steamid ?? authenticator.Session.SteamId;
-
-                var webCookieProperties = JsonConvert.DeserializeAnonymousType(
-                    serialized,
-                    new
-                    {
-                        webcookie = (string) null,
-                        web_cookie = (string) null,
-                        session = new
-                        {
-                            webcookie = (string) null,
-                            web_cookie = (string) null
-                        }
-                    }
-                );
-                var webCookie = webCookieProperties.web_cookie ??
-                                webCookieProperties.webcookie ??
-                                webCookieProperties.session.web_cookie ?? webCookieProperties.session.webcookie;
-
-                if (steamId != null && !string.IsNullOrWhiteSpace(webCookie))
-                {
-                    var newSession = new MobileSession(
-                        authenticator.Session.OAuthToken,
-                        steamId,
-                        authenticator.Session.SteamLogin,
-                        authenticator.Session.SteamLoginSecure,
-                        authenticator.Session.SessionId,
-                        authenticator.Session.RememberLoginToken,
-                        new Dictionary<ulong, string>
-                        {
-                            { steamId.Value, webCookie }
-                        }
-                    );
-
-                    authenticator = new Authenticator(
-                        authenticator.AuthenticatorData,
-                        newSession,
-                        authenticator.DeviceId
-                    );
-                }
-            }
-
+            
             // Tries to fill device identification string by searching for properties in the root of Json object
             if (string.IsNullOrWhiteSpace(authenticator.DeviceId))
             {
@@ -448,7 +387,6 @@ namespace SDroid.SteamMobile
         public bool HasEnoughInfo()
         {
             return !string.IsNullOrWhiteSpace(DeviceId) &&
-                   Session.HasEnoughInfo() &&
                    AuthenticatorData.HasEnoughInfo();
         }
 
@@ -470,7 +408,7 @@ namespace SDroid.SteamMobile
                             steamid = Session.SteamId,
                             steamguard_scheme = AuthenticatorData.SteamGuardScheme,
                             revocation_code = AuthenticatorData.RevocationCode,
-                            access_token = Session.OAuthToken
+                            access_token = Session.AccessToken
                         }
                     )
             ).ConfigureAwait(false);
