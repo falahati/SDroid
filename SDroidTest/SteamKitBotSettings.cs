@@ -33,20 +33,11 @@ namespace SDroidTest
         }
 
         /// <inheritdoc />
-        public string LoginKey { get; set; }
+        public string GuardData { get; set; }
 
         /// <inheritdoc />
         public int LoginTimeout { get; set; } = 300;
-
-        /// <inheritdoc />
-        public byte[] SentryFile { get; set; }
-
-        /// <inheritdoc />
-        public byte[] SentryFileHash { get; set; }
-
-        /// <inheritdoc />
-        public string SentryFileName { get; set; }
-
+        
         public int? ConnectionTimeout { get; set; }
     }
 }
