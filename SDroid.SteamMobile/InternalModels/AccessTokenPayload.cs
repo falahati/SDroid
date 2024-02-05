@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace SDroid.SteamWeb.InternalModels
+namespace SDroid.SteamMobile.InternalModels
 {
     internal class AccessTokenPayload
     {

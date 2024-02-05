@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SDroid.SteamMobile.Exceptions;
+using SDroid.SteamMobile.InternalModels;
 using SDroid.SteamMobile.Models.MobileAuthenticationAPI;
 using SDroid.SteamWeb;
 using SDroid.SteamWeb.Models;
@@ -18,63 +19,114 @@ namespace SDroid.SteamMobile
     public class MobileSession : WebSession, IEquatable<MobileSession>
     {
         public const string ClientName = "android";
-
-        public const string ClientVersion = "3067969+ (2.1.3)";
-
+        public const string ClientVersion = "777777 3.6.1";
         private string _refreshToken;
+        private string _accessToken;
+
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="MobileSession" /> class from a <see cref="WebSession" />.
+        /// </summary>
+        /// <param name="session">The web session.</param>
+        public MobileSession(
+            WebSession session
+        ) : base(
+            session.SteamId,
+            session.SteamLoginSecure,
+            session.SessionId,
+            null
+        )
+        {
+            Cookies.Add(
+                new Cookie("mobileClientVersion", ClientVersion, "/", CommunityCookieDomain)
+            );
+
+            Cookies.Add(
+                new Cookie("mobileClient", ClientName, "/", CommunityCookieDomain)
+            );
+
+            SteamId = session.SteamId;
+            RefreshToken = null;
+            AccessToken = null;
+
+            if (session is MobileSession mobileSession)
+            {
+                RefreshToken = mobileSession.RefreshToken;
+                AccessToken = mobileSession.AccessToken;
+
+                if (string.IsNullOrWhiteSpace(SteamLoginSecure))
+                {
+                    SteamLoginSecure = $"{SteamId}%7C%7C{AccessToken}";
+                }
+            }
+        }
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="MobileSession" /> class.
         /// </summary>
         /// <param name="steamId">The steam user identifier number.</param>
+        /// <param name="steamLoginSecure">The steam secure login token.</param>
         /// <param name="sessionId">The session identifier string.</param>
+        /// <param name="accessToken">The JWT access token</param>
+        /// <param name="refreshToken">The JWT refresh token</param>
         [JsonConstructor]
-        // ReSharper disable once TooManyDependencies
         public MobileSession(
             ulong steamId,
+            string steamLoginSecure,
+            string sessionId,
             string accessToken,
-            string refreshToken,
-            string sessionId
-            ) : base(steamId, accessToken, sessionId)
+            string refreshToken
+        ) : base(
+            steamId,
+            steamLoginSecure,
+            sessionId,
+            null
+        )
         {
-            WebCookies.Add(
+            Cookies.Add(
                 new Cookie("mobileClientVersion", ClientVersion, "/", CommunityCookieDomain)
             );
-            WebCookies.Add(
+
+            Cookies.Add(
                 new Cookie("mobileClient", ClientName, "/", CommunityCookieDomain)
             );
-            
+
             SteamId = steamId;
             RefreshToken = refreshToken;
+            AccessToken = accessToken;
+
+            if (string.IsNullOrWhiteSpace(SteamLoginSecure))
+            {
+                SteamLoginSecure = $"{SteamId}%7C%7C{AccessToken}";
+            }
         }
 
-        public MobileSession()
+        public MobileSession() : base()
         {
-            WebCookies.Add(
+            Cookies.Add(
                 new Cookie("mobileClientVersion", ClientVersion, "/", CommunityCookieDomain)
             );
-            WebCookies.Add(
+
+            Cookies.Add(
                 new Cookie("mobileClient", ClientName, "/", CommunityCookieDomain)
             );
         }
-
-        public MobileSession(LoginResponseTransferParameters transferParameters, string sessionId) :
-            this(
-                transferParameters.SteamId,
-                transferParameters.AuthenticationToken,
-                null, 
-                sessionId
-            )
-        {
-        }
-
+        
         /// <summary>
-        ///     Gets or sets the refresh token
+        ///     Gets or sets the JWT refresh token
         /// </summary>
         public string RefreshToken
         {
             get => _refreshToken;
             set => _refreshToken = value;
+        }
+
+        /// <summary>
+        ///     Gets or sets the JWT access token
+        /// </summary>
+        public string AccessToken
+        {
+            get => _accessToken;
+            set => _accessToken = value;
         }
 
         /// <summary>
@@ -84,7 +136,7 @@ namespace SDroid.SteamMobile
         {
             get
             {
-                var stringValue = WebCookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl))["steamid"]
+                var stringValue = Cookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl))["steamid"]
                     ?.Value;
 
                 if (!string.IsNullOrWhiteSpace(stringValue) && ulong.TryParse(stringValue, out var steamId))
@@ -124,9 +176,10 @@ namespace SDroid.SteamMobile
         {
             return new MobileSession(
                 SteamId,
+                SteamLoginSecure,
+                SessionId,
                 AccessToken,
-                RefreshToken,
-                SessionId
+                RefreshToken
             );
         }
 
@@ -153,6 +206,7 @@ namespace SDroid.SteamMobile
             var hashCode = -823311899;
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SessionId);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(AccessToken);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SteamLoginSecure);
             hashCode = hashCode * -1521134295 + SteamId.GetHashCode();
 
             return hashCode;
@@ -265,10 +319,43 @@ namespace SDroid.SteamMobile
             return location.StartsWith("steammobile://lostauth", StringComparison.CurrentCultureIgnoreCase);
         }
 
+        public bool IsExpired()
+        {
+            var token = AccessToken.Split('.').FirstOrDefault()?.Replace('-', '+').Replace('_', '/');
+            if (string.IsNullOrEmpty(token))
+            {
+                return true;
+            }
+
+            if (token.Length % 4 != 0)
+            {
+                token += new string('=', 4 - token.Length % 4);
+            }
+
+            var payload = JsonConvert.DeserializeObject<AccessTokenPayload>(
+                System.Text.Encoding.UTF8.GetString(
+                    Convert.FromBase64String(token)
+                )
+            );
+
+            if (payload == null)
+            {
+                return true;
+            }
+
+            return DateTimeOffset.UtcNow.ToUnixTimeSeconds() > payload.Expiry;
+        }
+
         public void UpdateSession(WebSession webSession)
         {
             SessionId = webSession.SessionId;
-            AccessToken = webSession.AccessToken;
+            SteamLoginSecure = webSession.SteamLoginSecure;
+
+            if (webSession is MobileSession mobileSession)
+            {
+                AccessToken = mobileSession.AccessToken;
+                RefreshToken = mobileSession.RefreshToken;
+            }
         }
     }
 }

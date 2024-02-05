@@ -204,38 +204,38 @@ namespace SDroid
             CallbackManager = null;
         }
 
-        protected override async Task OnCheckSession()
-        {
-            try
-            {
-                lock (LocalLock)
-                {
-                    if (BotStatus != SteamBotStatus.Running || WebAccess == null)
-                    {
-                        return;
-                    }
-                }
+        //protected override async Task OnCheckSession()
+        //{
+        //    try
+        //    {
+        //        lock (LocalLock)
+        //        {
+        //            if (BotStatus != SteamBotStatus.Running || WebAccess == null)
+        //            {
+        //                return;
+        //            }
+        //        }
 
-                BotLogger.LogDebug("[{0}] Checking session...", SteamId?.ConvertToUInt64());
+        //        BotLogger.LogDebug("[{0}] Checking session...", SteamId?.ConvertToUInt64());
 
-                if (await WebAccess.VerifySession().ConfigureAwait(false))
-                {
-                    return;
-                }
+        //        if (await WebAccess.VerifySession().ConfigureAwait(false))
+        //        {
+        //            return;
+        //        }
 
-                BotLogger.LogDebug("[{0}] Session expired.", SteamId?.ConvertToUInt64());
-            }
-            catch (Exception e)
-            {
-                BotLogger.LogError(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
-                lock (LocalLock)
-                {
-                    StalledLoginCheckTimer?.Dispose();
-                }
-                await OnLoggedOut().ConfigureAwait(false);
-                await OnTerminate(false).ConfigureAwait(false);
-            }
-        }
+        //        BotLogger.LogDebug("[{0}] Session expired.", SteamId?.ConvertToUInt64());
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        BotLogger.LogError(e, "[{0}] {1}", SteamId?.ConvertToUInt64(), e.Message);
+        //        lock (LocalLock)
+        //        {
+        //            StalledLoginCheckTimer?.Dispose();
+        //        }
+        //        await OnLoggedOut().ConfigureAwait(false);
+        //        await OnTerminate(false).ConfigureAwait(false);
+        //    }
+        //}
 
         protected virtual Task OnAccountInfoAvailable(SteamUser.AccountInfoCallback accountInfo)
         {
@@ -335,42 +335,43 @@ namespace SDroid
                 var success = false;
                 var session = new MobileSession(
                     authSession.SteamID,
+                    $"{authSession.SteamID}%7C%7C{pollResponse.AccessToken}",
+                    SteamMobileWebAccess.GetGuest().Session.SessionId,
                     pollResponse.AccessToken,
-                    pollResponse.RefreshToken,
-                    Guid.NewGuid().ToString("N")
+                    pollResponse.RefreshToken
                 );
                 
-                if (
-                    new SteamWebAccess(
-                        session,
-                        IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress)
-                            ? ipAddress
-                            : IPAddress.Any,
-                        string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy)
-                    ).VerifySession().Result
-                )
-                {
-                    BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
+                //if (
+                //    new SteamWebAccess(
+                //        session,
+                //        IPAddress.TryParse(BotSettings.PublicIPAddress, out var ipAddress)
+                //            ? ipAddress
+                //            : IPAddress.Any,
+                //        string.IsNullOrWhiteSpace(BotSettings.Proxy) ? null : new WebProxy(BotSettings.Proxy)
+                //    ).VerifySession().Result
+                //)
+                //{
+                //    BotLogger.LogTrace("[{0}] Session is valid.", SteamId?.ConvertToUInt64());
                     OnNewWebSessionAvailable(session).Wait();
                     LoginBackoff.Reset();
                     success = true;
-                }
+                // }
 
-                if (!success)
-                {
-                    BotLogger.LogDebug("[{0}] Failed to retrieve WebAccess session. Trying to recover session.", SteamId?.ConvertToUInt64());
+                //if (!success)
+                //{
+                //    BotLogger.LogDebug("[{0}] Failed to retrieve WebAccess session. Trying to recover session.", SteamId?.ConvertToUInt64());
 
-                    if (RecoverWebSession().Result)
-                    {
-                        LoginBackoff.Reset();
-                    }
-                    else
-                    {
-                        BotLogger.LogDebug("[{0}] Failed to get a WebAccess session.", SteamId?.ConvertToUInt64());
-                        await OnTerminate(false);
-                        return;
-                    }
-                }
+                //    if (RecoverWebSession().Result)
+                //    {
+                //        LoginBackoff.Reset();
+                //    }
+                //    else
+                //    {
+                //        BotLogger.LogDebug("[{0}] Failed to get a WebAccess session.", SteamId?.ConvertToUInt64());
+                //        await OnTerminate(false);
+                //        return;
+                //    }
+                //}
 
                 SteamUser.LogOn(
                     new LogOnDetails

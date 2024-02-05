@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using Newtonsoft.Json;
-using SDroid.SteamWeb.InternalModels;
 using SDroid.SteamWeb.Models;
 
 namespace SDroid.SteamWeb
@@ -15,7 +13,7 @@ namespace SDroid.SteamWeb
     public class WebSession : IEquatable<WebSession>
     {
         private ulong _steamCommunityId;
-        private string _accessToken;
+        private string _webCookie;
         public const string CommunityCookieDomain = ".steamcommunity.com";
         public const string StoreCookieDomain = "store.steampowered.com";
 
@@ -24,26 +22,29 @@ namespace SDroid.SteamWeb
         ///     Initializes a new instance of the <see cref="WebSession" /> class.
         /// </summary>
         /// <param name="steamId">The steam user identifier number.</param>
-        /// <param name="accessToken">The sessions access token.</param>
+        /// <param name="steamLoginSecure">The steam secure login token.</param>
         /// <param name="sessionId">The session identifier string.</param>
+        /// <param name="webCookie">The web cookie value</param>
         [JsonConstructor]
         // ReSharper disable once TooManyDependencies
         public WebSession(
             ulong steamId,
-            string accessToken,
-            string sessionId
+            string steamLoginSecure,
+            string sessionId,
+            string webCookie
             ) : this()
         {
-            SessionId = sessionId;
             SteamId = steamId;
-            AccessToken = accessToken;
+            SteamLoginSecure = steamLoginSecure;
+            SessionId = string.IsNullOrWhiteSpace(sessionId) ? Guid.NewGuid().ToString("N").ToUpper() : sessionId;
+            WebCookie = webCookie;
         }
 
-        public WebSession(LoginResponseTransferParameters transferParameters, string sessionId) :
-            this(
-                transferParameters.SteamId,
-                transferParameters.TokenSecure,
-                sessionId
+        public WebSession(LoginResponseTransferParameters transferParameters, string sessionId) : this(
+            transferParameters.SteamId,
+            $"{transferParameters.SteamId}%7C%7C{transferParameters.TokenSecure}",
+            sessionId,
+            transferParameters.WebCookie
             )
         {
         }
@@ -58,27 +59,23 @@ namespace SDroid.SteamWeb
         }
 
         /// <summary>
-        ///     Gets the access token.
+        ///     Gets or sets the webcoockie.
         /// </summary>
-        public string AccessToken
+        public string WebCookie
         {
-            get => _accessToken;
-            protected set
-            {
-                _accessToken = value;
-                SteamLogin = SteamId + "%7C%7C" + value;
-                SteamLoginSecure = SteamId + "%7C%7C" + value;
-            }
+            get => _webCookie;
+            protected set => _webCookie = value;
         }
-
+        
         /// <summary>
         ///     Initializes a new instance of the <see cref="WebSession" /> class.
         /// </summary>
         public WebSession()
         {
-            WebCookies = new CookieContainer();
+            Cookies = new CookieContainer();
             AddCookie("Steam_Language", SteamWebAccess.SteamLanguage);
             AddCookie("dob", "");
+            SessionId = Guid.NewGuid().ToString("N").ToUpper();
         }
 
         /// <summary>
@@ -90,7 +87,7 @@ namespace SDroid.SteamWeb
         /// </param>
         public WebSession(CookieContainer cookieContainer)
         {
-            WebCookies = cookieContainer;
+            Cookies = cookieContainer;
         }
         
         /// <summary>
@@ -98,38 +95,29 @@ namespace SDroid.SteamWeb
         /// </summary>
         public string SessionId
         {
-            get => WebCookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl))["sessionid"]?.Value;
+            get => Cookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl))["sessionid"]?.Value;
             protected set => AddCookie("sessionid", value ?? "");
         }
-
-        /// <summary>
-        ///     Gets the steam user login.
-        /// </summary>
-        public string SteamLogin
-        {
-            get => WebCookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl))["steamLogin"]?.Value;
-            protected set => AddCookie("steamLogin", value ?? "", true);
-        }
-
+        
         /// <summary>
         ///     Gets the steam user login secure.
         /// </summary>
         public string SteamLoginSecure
         {
-            get => WebCookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl))["steamLoginSecure"]?.Value;
+            get => Cookies?.GetCookies(new Uri(SteamWebAccess.CommunityBaseUrl))["steamLoginSecure"]?.Value;
             protected set => AddCookie("steamLoginSecure", value ?? "", true, true);
         }
-        
 
         [JsonIgnore]
-        protected CookieContainer WebCookies { get; }
+        protected CookieContainer Cookies { get; }
 
         /// <inheritdoc />
         public virtual bool Equals(WebSession other)
         {
             return other != null &&
                    SessionId == other.SessionId &&
-                   AccessToken == other.AccessToken;
+                   SteamId == other.SteamId &&
+                   SteamLoginSecure == other.SteamLoginSecure;
         }
 
         public static bool operator ==(WebSession data1, WebSession data2)
@@ -139,7 +127,7 @@ namespace SDroid.SteamWeb
 
         public static implicit operator CookieContainer(WebSession session)
         {
-            return session.WebCookies;
+            return session.Cookies;
         }
 
         public static bool operator !=(WebSession data1, WebSession data2)
@@ -158,14 +146,15 @@ namespace SDroid.SteamWeb
         {
             var hashCode = -823311899;
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SessionId);
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(AccessToken);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SteamId.ToString());
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(SteamLoginSecure);
 
             return hashCode;
         }
 
         public virtual WebSession Clone()
         {
-            return new WebSession(SteamId, AccessToken, SessionId);
+            return new WebSession(SteamId, SteamLoginSecure, SessionId, WebCookie);
         }
 
         /// <summary>
@@ -178,51 +167,24 @@ namespace SDroid.SteamWeb
         public virtual bool HasEnoughInfo()
         {
             return !string.IsNullOrWhiteSpace(SessionId) &&
-                   !string.IsNullOrWhiteSpace(AccessToken);
-        }
-
-        public bool IsExpired()
-        {
-            var token = AccessToken.Split('.').FirstOrDefault()?.Replace('-', '+').Replace('_', '/');
-            if (string.IsNullOrEmpty(token))
-            {
-                return true;
-            }
-
-            if (token.Length % 4 != 0)
-            {
-                token += new string('=', 4 - token.Length % 4);
-            }
-
-            var payload = JsonConvert.DeserializeObject<AccessTokenPayload>(
-                System.Text.Encoding.UTF8.GetString(
-                    Convert.FromBase64String(token)
-                )
-            );
-
-            if (payload == null)
-            {
-                return true;
-            }
-            
-            return DateTimeOffset.UtcNow.ToUnixTimeSeconds() > payload.Expiry;
+                   !string.IsNullOrWhiteSpace(SteamLoginSecure);
         }
 
         public CookieContainer AddCookie(string name, string value, bool httpOnly = false, bool secure = false)
         {
-            WebCookies.Add(
+            Cookies.Add(
                 new Cookie(name, value, "/", CommunityCookieDomain)
                 {
                     HttpOnly = httpOnly
                 }
             );
-            WebCookies.Add(
+            Cookies.Add(
                 new Cookie(name, value, "/", StoreCookieDomain)
                 {
                     HttpOnly = httpOnly
                 }
             );
-            return WebCookies;
+            return Cookies;
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -15,15 +16,17 @@ namespace SDroid.SteamWeb
     /// </summary>
     public class WebLogin
     {
-        protected virtual string LoginCaptchaUrl => $"{SteamWebAccess.CommunityBaseUrl}/public/captcha.php?gid=";
+        private string LoginCaptchaUrl => $"{SteamWebAccess.CommunityBaseUrl}/public/captcha.php?gid=";
 
-        protected virtual string LoginInitializeUrl => $"{SteamWebAccess.CommunityBaseUrl}/login";
+        private string LoginInitializeUrl => $"{SteamWebAccess.CommunityBaseUrl}/login";
 
-        protected virtual string WebLoginRSAUrl => $"{SteamWebAccess.CommunityBaseUrl}/login/getrsakey";
+        // ReSharper disable once InconsistentNaming
+        private string WebLoginRSAUrl => $"{SteamWebAccess.CommunityBaseUrl}/login/getrsakey";
 
-        protected virtual string WebLoginUrl => $"{SteamWebAccess.CommunityBaseUrl}/login/dologin";
+        private string WebLoginUrl => $"{SteamWebAccess.CommunityBaseUrl}/login/dologin";
 
         private static readonly DateTime Epoch = new DateTime(1970, 1, 1);
+
         protected byte[] CachedCaptchaImage { get; set; }
 
         /// <summary>
@@ -237,7 +240,7 @@ namespace SDroid.SteamWeb
             }
         }
 
-        protected virtual async Task<SteamWebAccessRequest> ConstructLoginRequest(LoginCredentials credentials)
+        private async Task<SteamWebAccessRequest> ConstructLoginRequest(LoginCredentials credentials)
         {
             // Get a RSA public key for password encryption
             var serverResponse = await SteamWebAccess.FetchString(
@@ -323,7 +326,7 @@ namespace SDroid.SteamWeb
             return !string.IsNullOrWhiteSpace(SteamWebAccess?.Session?.SessionId);
         }
 
-        protected virtual Task<bool> ProcessLoginResponse(string response)
+        private Task<bool> ProcessLoginResponse(string response)
         {
             var loginResponse = JsonConvert.DeserializeObject<LoginResponse>(response);
 
@@ -400,7 +403,6 @@ namespace SDroid.SteamWeb
 
             return Task.FromResult(true);
         }
-
 
         protected virtual void ResetStates()
         {

@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Cache;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -241,26 +240,26 @@ namespace SDroid.SteamWeb
             return null;
         }
 
-        public virtual async Task<bool> VerifySession()
-        {
-            if (string.IsNullOrWhiteSpace(Session?.SteamLogin) &&
-                string.IsNullOrWhiteSpace(Session?.SteamLoginSecure))
-            {
-                return false;
-            }
+        //public virtual async Task<bool> VerifySession()
+        //{
+        //    if (string.IsNullOrWhiteSpace(Session?.SteamLogin) &&
+        //        string.IsNullOrWhiteSpace(Session?.SteamLoginSecure))
+        //    {
+        //        return false;
+        //    }
 
-            try
-            {
-                (await FetchBinary(new SteamWebAccessRequest(CommunityBaseUrl)).ConfigureAwait(false)).Dispose();
-            }
-            catch
-            {
-                return false;
-            }
+        //    try
+        //    {
+        //        (await FetchBinary(new SteamWebAccessRequest(CommunityBaseUrl)).ConfigureAwait(false)).Dispose();
+        //    }
+        //    catch
+        //    {
+        //        return false;
+        //    }
 
-            return !string.IsNullOrWhiteSpace(Session?.SteamLogin) ||
-                   !string.IsNullOrWhiteSpace(Session?.SteamLoginSecure);
-        }
+        //    return !string.IsNullOrWhiteSpace(Session?.SteamLogin) ||
+        //           !string.IsNullOrWhiteSpace(Session?.SteamLoginSecure);
+        //}
 
         protected virtual Task<HttpWebRequest> MakeRequest(
             string url,
