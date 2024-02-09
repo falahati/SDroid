@@ -264,7 +264,8 @@ namespace SDroid.SteamMobile
                 }
 
                 AccessToken = serverResponse.Response.AccessToken;
-                
+                SteamLoginSecure = $"{SteamId}%7C%7C{AccessToken}";
+
                 return true;
             }
             catch (Exception e)
